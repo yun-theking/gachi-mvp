@@ -1,0 +1,25 @@
+# env files (API keys - never commit)
+.env
+.env.local
+.env*.local
+
+# Next.js
+.next/
+out/
+*.tsbuildinfo
+
+# local sqlite db (generated on first run)
+data/*.db
+
+# dependencies
+node_modules/
+
+# misc
+.DS_Store
+
+# local editor/tooling config (machine-specific, not for handoff)
+.claude/
+*.code-workspace
+
+# unrelated legacy prototype (separate git repo)
+designthinkingapp/

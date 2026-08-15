@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>가치 — 나만의 회고록</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0e0c;
+      --surface: #1a1815;
+      --surface2: #231f1a;
+      --border: #2e2922;
+      --gold: #c9a96e;
+      --gold-light: #e8c98a;
+      --gold-dim: #7a6240;
+      --text: #f0ead8;
+      --text-dim: #8a7f6e;
+      --text-muted: #4a4438;
+      --red: #e05252;
+      --radius: 20px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 16px 80px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      width: 100%;
+      max-width: 600px;
+      padding: 52px 0 40px;
+      text-align: center;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .logo-dot {
+      width: 8px; height: 8px;
+      background: var(--gold);
+      border-radius: 50%;
+    }
+    h1 {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      letter-spacing: 0.06em;
+    }
+    .tagline {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* ── MAIN WRAPPER ── */
+    .wrap { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── RECORD CARD ── */
+    .record-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 44px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .record-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 240px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    }
+
+    /* Waveform bars */
+    .wave {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 36px;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .wave.active { opacity: 1; }
+    .wave-bar {
+      width: 3px;
+      border-radius: 2px;
+      background: var(--gold);
+      height: 8px;
+      animation: none;
+    }
+    .wave.active .wave-bar {
+      animation: wave-anim 1s ease-in-out infinite;
+    }
+    .wave-bar:nth-child(1)  { animation-delay: 0s;    }
+    .wave-bar:nth-child(2)  { animation-delay: 0.1s;  }
+    .wave-bar:nth-child(3)  { animation-delay: 0.2s;  }
+    .wave-bar:nth-child(4)  { animation-delay: 0.3s;  }
+    .wave-bar:nth-child(5)  { animation-delay: 0.15s; }
+    .wave-bar:nth-child(6)  { animation-delay: 0.05s; }
+    .wave-bar:nth-child(7)  { animation-delay: 0.25s; }
+    .wave-bar:nth-child(8)  { animation-delay: 0.35s; }
+    .wave-bar:nth-child(9)  { animation-delay: 0.1s;  }
+    .wave-bar:nth-child(10) { animation-delay: 0.2s;  }
+    .wave-bar:nth-child(11) { animation-delay: 0.3s;  }
+    .wave-bar:nth-child(12) { animation-delay: 0.05s; }
+
+    @keyframes wave-anim {
+      0%, 100% { height: 6px; opacity: 0.4; }
+      50% { height: 28px; opacity: 1; }
+    }
+
+    /* Record button */
+    #recordBtn {
+      position: relative;
+      width: 96px; height: 96px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, #c9a96e, #a07840);
+      box-shadow: 0 0 0 0 rgba(201, 169, 110, 0.3),
+                  0 8px 32px rgba(0,0,0,0.4);
+      transition: transform 0.15s, box-shadow 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 4px;
+    }
+    #recordBtn:hover:not(:disabled) {
+      transform: scale(1.06);
+      box-shadow: 0 0 0 12px rgba(201,169,110,0.1), 0 8px 32px rgba(0,0,0,0.5);
+    }
+    #recordBtn:active:not(:disabled) { transform: scale(0.96); }
+    #recordBtn:disabled {
+      background: linear-gradient(135deg, #3a3530, #2a2520);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    #recordBtn.recording {
+      background: linear-gradient(135deg, #e05252, #b03030);
+      animation: ring-pulse 1.5s ease-out infinite;
+    }
+    @keyframes ring-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(224,82,82,0.5), 0 8px 32px rgba(0,0,0,0.4); }
+      70%  { box-shadow: 0 0 0 20px rgba(224,82,82,0), 0 8px 32px rgba(0,0,0,0.4); }
+      100% { box-shadow: 0 0 0 0 rgba(224,82,82,0), 0 8px 32px rgba(0,0,0,0.4); }
+    }
+    .btn-icon { font-size: 1.8rem; line-height: 1; }
+    .btn-lbl { font-size: 0.6rem; font-weight: 500; color: rgba(255,255,255,0.8); letter-spacing: 0.1em; text-transform: uppercase; }
+    #recordBtn:disabled .btn-icon { filter: grayscale(1); opacity: 0.4; }
+
+    /* Spinner icon */
+    .spinning { animation: spin 1.2s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Status */
+    #status {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      text-align: center;
+      min-height: 18px;
+      transition: color 0.3s;
+    }
+    #status.recording { color: var(--red); }
+    #status.active    { color: var(--gold); }
+    #status.error     { color: var(--red); }
+    #timer {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 1.4rem;
+      font-weight: 300;
+      color: var(--gold-light);
+      letter-spacing: 0.1em;
+      min-height: 32px;
+      transition: opacity 0.3s;
+      opacity: 0;
+    }
+    #timer.visible { opacity: 1; }
+
+    /* ── PROGRESS STEPS ── */
+    .steps {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      width: 100%;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    .step { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+    .step-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      border: 1.5px solid var(--text-muted);
+      background: transparent;
+      transition: all 0.4s;
+    }
+    .step-dot.done  { background: var(--gold); border-color: var(--gold); }
+    .step-dot.active { background: transparent; border-color: var(--gold); box-shadow: 0 0 6px var(--gold); animation: dot-pulse 1s ease infinite; }
+    @keyframes dot-pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+    .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 -1px; margin-bottom: 16px; transition: background 0.4s; }
+    .step-line.done { background: var(--gold-dim); }
+    .step-lbl { font-size: 0.62rem; color: var(--text-muted); letter-spacing: 0.06em; white-space: nowrap; }
+    .step.active .step-lbl { color: var(--gold); }
+    .step.done .step-lbl   { color: var(--gold-dim); }
+
+    /* ── RESULT CARDS ── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 28px 24px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.5s, transform 0.5s;
+      pointer-events: none;
+    }
+    .panel.show { opacity: 1; transform: none; pointer-events: auto; }
+    .panel-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .panel-label::before {
+      content: '';
+      display: block;
+      width: 20px; height: 1px;
+      background: var(--gold-dim);
+    }
+
+    /* Transcript */
+    #transcriptText {
+      font-size: 0.95rem;
+      line-height: 1.8;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    /* Chapter */
+    #chapterText {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 1rem;
+      line-height: 2;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+
+    /* divider in chapter panel */
+    .chapter-divider {
+      width: 40px; height: 1px;
+      background: linear-gradient(90deg, var(--gold-dim), transparent);
+      margin: 20px 0;
+    }
+
+    /* Questions */
+    #questionsList { display: flex; flex-direction: column; gap: 10px; }
+    .q-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 18px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      cursor: pointer;
+      background: var(--surface2);
+      transition: border-color 0.2s, background 0.2s;
+      text-align: left;
+      width: 100%;
+    }
+    .q-item:hover { border-color: var(--gold-dim); background: #1e1c17; }
+    .q-item:disabled { opacity: 0.4; cursor: not-allowed; }
+    .q-num {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .q-text { font-size: 0.88rem; color: var(--text-dim); line-height: 1.6; }
+
+    /* Reset */
+    #resetBtn {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      transition: border-color 0.2s, color 0.2s;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    #resetBtn:hover { border-color: var(--text-muted); color: var(--text-dim); }
+
+    /* History */
+    #historyNote {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      padding: 8px 0 0;
+      display: none;
+    }
+
+    .hidden { display: none !important; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    <h1>가치</h1>
+    <div class="logo-dot"></div>
+  </div>
+  <p class="tagline">나만의 이야기를 회고록으로</p>
+</header>
+
+<div class="wrap">
+
+  <!-- Record Card -->
+  <div class="record-card">
+    <div class="wave" id="wave">
+      <div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div>
+    </div>
+
+    <button id="recordBtn">
+      <span class="btn-icon" id="btnIcon">🎙️</span>
+      <span class="btn-lbl" id="btnLabel">시작</span>
+    </button>
+
+    <div id="timer">00:00</div>
+    <div id="status">버튼을 눌러 이야기를 시작하세요</div>
+
+    <!-- Steps -->
+    <div class="steps">
+      <div class="step" id="step1"><div class="step-dot" id="dot1"></div><div class="step-lbl">녹음</div></div>
+      <div class="step-line" id="line1"></div>
+      <div class="step" id="step2"><div class="step-dot" id="dot2"></div><div class="step-lbl">변환</div></div>
+      <div class="step-line" id="line2"></div>
+      <div class="step" id="step3"><div class="step-dot" id="dot3"></div><div class="step-lbl">작성</div></div>
+      <div class="step-line" id="line3"></div>
+      <div class="step" id="step4"><div class="step-dot" id="dot4"></div><div class="step-lbl">완료</div></div>
+    </div>
+  </div>
+
+  <!-- Transcript -->
+  <div class="panel" id="transcriptPanel">
+    <div class="panel-label">음성 인식</div>
+    <div id="transcriptText"></div>
+  </div>
+
+  <!-- Chapter -->
+  <div class="panel" id="chapterPanel">
+    <div class="panel-label">회고록 챕터 초안</div>
+    <div id="chapterText"></div>
+    <div class="chapter-divider"></div>
+  </div>
+
+  <!-- Questions -->
+  <div class="panel" id="questionsPanel">
+    <div class="panel-label">계속 이야기해볼까요</div>
+    <div id="questionsList"></div>
+  </div>
+
+  <!-- Reset -->
+  <div id="resetWrap" class="hidden">
+    <button id="resetBtn">← 처음부터 다시 시작</button>
+  </div>
+
+  <div id="historyNote"></div>
+</div>
+
+<script>
+  const recordBtn  = document.getElementById("recordBtn");
+  const btnIcon    = document.getElementById("btnIcon");
+  const btnLabel   = document.getElementById("btnLabel");
+  const statusEl   = document.getElementById("status");
+  const timerEl    = document.getElementById("timer");
+  const waveEl     = document.getElementById("wave");
+
+  let mediaRecorder = null, chunks = [], timerInterval = null, seconds = 0;
+  let history = [];
+
+  /* ── Helpers ── */
+  const fmt = s => `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+  const show = id => document.getElementById(id).classList.add("show");
+  const panel = id => { document.getElementById(id).classList.remove("hidden"); requestAnimationFrame(() => show(id)); };
+  const setStatus = (t, c="") => { statusEl.textContent = t; statusEl.className = c; };
+
+  function setStep(n) {
+    // n: 0=idle, 1=recording, 2=transcribing, 3=generating, 4=done
+    [1,2,3,4].forEach(i => {
+      const dot  = document.getElementById(`dot${i}`);
+      const step = document.getElementById(`step${i}`);
+      const line = document.getElementById(`line${i}`);
+      dot.className  = "step-dot" + (i < n ? " done" : i === n ? " active" : "");
+      step.className = "step"     + (i < n ? " done" : i === n ? " active" : "");
+      if (line) line.className = "step-line" + (i < n ? " done" : "");
+    });
+  }
+
+  /* ── Record Button ── */
+  recordBtn.addEventListener("click", async () => {
+    if (mediaRecorder?.state === "recording") stopRecording();
+    else await startRecording();
+  });
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
+      mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
+      chunks = [];
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      mediaRecorder.start(100);
+
+      recordBtn.className = "recording";
+      btnIcon.innerHTML = "⏹";
+      btnLabel.textContent = "중지";
+      timerEl.classList.add("visible");
+      waveEl.classList.add("active");
+      seconds = 0; timerEl.textContent = "00:00";
+      setStatus("녹음 중 — 하고 싶은 이야기를 자유롭게 말해보세요", "recording");
+      setStep(1);
+
+      timerInterval = setInterval(() => { seconds++; timerEl.textContent = fmt(seconds); }, 1000);
+    } catch {
+      setStatus("마이크 접근이 거부되었습니다. 브라우저 설정을 확인해주세요.", "error");
+    }
+  }
+
+  function stopRecording() {
+    clearInterval(timerInterval);
+    timerEl.classList.remove("visible");
+    waveEl.classList.remove("active");
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      mediaRecorder.stream.getTracks().forEach(t => t.stop());
+      processAudio(blob);
+    };
+    mediaRecorder.stop();
+  }
+
+  function setBusy(icon, lbl, statusTxt, stepN) {
+    recordBtn.className = "";
+    recordBtn.disabled = true;
+    btnIcon.innerHTML = `<span class="spinning">${icon}</span>`;
+    btnLabel.textContent = lbl;
+    setStatus(statusTxt, "active");
+    setStep(stepN);
+    document.querySelectorAll(".q-item").forEach(b => b.disabled = true);
+  }
+
+  function setIdle() {
+    recordBtn.disabled = false;
+    recordBtn.className = "";
+    btnIcon.textContent = "🎙️";
+    btnLabel.textContent = "시작";
+    document.querySelectorAll(".q-item").forEach(b => b.disabled = false);
+  }
+
+  async function processAudio(blob) {
+    setBusy("⏳", "변환중", "음성을 텍스트로 변환하고 있어요…", 2);
+    try {
+      const fd = new FormData();
+      fd.append("audio", blob, "recording.webm");
+      const r1 = await fetch("/api/transcribe", { method: "POST", body: fd });
+      const d1 = await r1.json();
+      if (!r1.ok) throw new Error(d1.error);
+
+      document.getElementById("transcriptText").textContent = d1.text;
+      panel("transcriptPanel");
+
+      await generate(d1.text);
+    } catch(e) {
+      setStatus(e.message || "오류가 발생했습니다.", "error");
+      setStep(0); setIdle();
+    }
+  }
+
+  async function generate(text) {
+    setBusy("✍️", "작성중", "회고록 챕터를 작성하고 있어요…", 3);
+    try {
+      const r2 = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, history }),
+      });
+      const d2 = await r2.json();
+      if (!r2.ok) throw new Error(d2.error);
+
+      // Chapter
+      document.getElementById("chapterText").textContent = d2.chapter;
+      panel("chapterPanel");
+
+      // Questions
+      const list = document.getElementById("questionsList");
+      list.innerHTML = "";
+      d2.questions.forEach((q, i) => {
+        const btn = document.createElement("button");
+        btn.className = "q-item";
+        btn.innerHTML = `<span class="q-num">Q${i+1}</span><span class="q-text">${q}</span>`;
+        btn.onclick = () => handleQuestion(q);
+        list.appendChild(btn);
+      });
+      panel("questionsPanel");
+      document.getElementById("resetWrap").classList.remove("hidden");
+
+      // History
+      history.push({ role: "user", content: text });
+      history.push({ role: "assistant", content: JSON.stringify(d2) });
+      const note = document.getElementById("historyNote");
+      note.style.display = "block";
+      note.textContent = `대화 ${Math.floor(history.length/2)}회 누적 — 후속 질문이 앞 이야기를 기억해요`;
+
+      setStep(4);
+      setStatus("완성됐어요. 아래 질문을 눌러 이야기를 이어가세요.");
+      setIdle();
+    } catch(e) {
+      setStatus(e.message || "오류가 발생했습니다.", "error");
+      setStep(0); setIdle();
+    }
+  }
+
+  async function handleQuestion(q) {
+    document.getElementById("transcriptText").textContent = q;
+    // hide old results
+    ["chapterPanel","questionsPanel"].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove("show");
+    });
+    await generate(q);
+  }
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    history = [];
+    ["transcriptPanel","chapterPanel","questionsPanel"].forEach(id => {
+      document.getElementById(id).classList.remove("show");
+    });
+    document.getElementById("resetWrap").classList.add("hidden");
+    document.getElementById("historyNote").style.display = "none";
+    setStatus("버튼을 눌러 이야기를 시작하세요");
+    setStep(0); setIdle();
+  });
+</script>
+</body>
+</html>

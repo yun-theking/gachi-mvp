@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>가치 — 공유</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #0f0e0c;
+      color: #f0ead8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+    .card {
+      background: #1a1815;
+      border: 1px solid #2e2922;
+      border-radius: 28px;
+      padding: 48px 40px;
+      text-align: center;
+      max-width: 380px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 200px; height: 1px;
+      background: linear-gradient(90deg, transparent, #c9a96e, transparent);
+    }
+    .dots { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
+    .dot { width: 7px; height: 7px; background: #c9a96e; border-radius: 50%; }
+    h1 {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 1.8rem;
+      color: #e8c98a;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .sub {
+      font-size: 0.78rem;
+      color: #6b5f4e;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+    .qr-wrap {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      display: inline-block;
+      margin-bottom: 28px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    canvas { display: block; }
+    .url {
+      font-size: 0.72rem;
+      color: #6b5f4e;
+      word-break: break-all;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+    .desc {
+      font-size: 0.82rem;
+      color: #8a7f6e;
+      line-height: 1.8;
+    }
+    .desc strong { color: #c9a96e; font-weight: 500; }
+    .divider {
+      width: 40px; height: 1px;
+      background: #2e2922;
+      margin: 24px auto;
+    }
+    .note {
+      font-size: 0.72rem;
+      color: #4a4438;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="dots"><div class="dot"></div><div class="dot"></div></div>
+  <h1>가치</h1>
+  <p class="sub">나만의 이야기를 회고록으로</p>
+
+  <div class="qr-wrap">
+    <canvas id="qr"></canvas>
+  </div>
+
+  <p class="url" id="urlText"></p>
+
+  <p class="desc">
+    QR코드를 스캔하면<br>
+    <strong>음성으로 나만의 회고록</strong>을<br>
+    바로 작성할 수 있어요
+  </p>
+
+  <div class="divider"></div>
+
+  <p class="note">
+    🎙️ 말하면 → 📖 회고록 챕터 생성<br>
+    후속 질문으로 이야기를 이어가세요
+  </p>
+</div>
+
+<script>
+  const url = "https://gumdrop-spiritual-excitable.ngrok-free.dev";
+  document.getElementById("urlText").textContent = url;
+  QRCode.toCanvas(document.getElementById("qr"), url, {
+    width: 220,
+    margin: 1,
+    color: { dark: "#0f0e0c", light: "#ffffff" }
+  });
+</script>
+</body>
+</html>
