@@ -1,10 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  // Allow large audio file uploads
-  api: {
-    bodyParser: false,
-  },
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
