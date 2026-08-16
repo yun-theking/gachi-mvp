@@ -14,9 +14,9 @@ const STAGE_NAMES: Record<number, string> = {
   10: "은퇴 이후·후대에 남기는 말",
 };
 
-export default function ArchivePage() {
-  const entries = getAllEntries();
-  const progress = getProgressSummary();
+export default async function ArchivePage() {
+  const entries = await getAllEntries();
+  const progress = await getProgressSummary();
   const stagesStarted = new Set(entries.map((e) => e.life_stage_id)).size;
 
   const byStage = new Map<number, typeof entries>();

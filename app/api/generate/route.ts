@@ -24,16 +24,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "텍스트가 없습니다." }, { status: 400 });
     }
 
-    const askedQuestion = questionId ? getQuestionById(questionId) : undefined;
-    const lifeStageId = askedQuestion?.life_stage_id ?? getCurrentStageId() ?? 1;
+    const askedQuestion = questionId ? await getQuestionById(questionId) : undefined;
+    const lifeStageId = askedQuestion?.life_stage_id ?? (await getCurrentStageId()) ?? 1;
     const askedKo = askedQuestion?.question_ko ?? "(자유 답변)";
 
-    const stageBefore = getCurrentStageId();
+    const stageBefore = await getCurrentStageId();
 
     // Candidates for the *next* question: remaining questions in the same stage,
     // excluding the one the user just answered. The model may only pick from this list —
     // it never invents question text itself.
-    const stageCandidates = getRemainingQuestions(lifeStageId).filter(
+    const stageCandidates = (await getRemainingQuestions(lifeStageId)).filter(
       (q) => q.id !== questionId
     );
     const candidateList = stageCandidates
@@ -84,7 +84,7 @@ ${candidateList || "(이 생애주기의 후보가 모두 소진되었습니다.
     };
 
     // Persist this turn now that we have the generated chapter.
-    saveEntry({
+    await saveEntry({
       questionId: askedQuestion?.id ?? null,
       lifeStageId,
       questionKo: askedKo,
@@ -94,10 +94,10 @@ ${candidateList || "(이 생애주기의 후보가 모두 소진되었습니다.
 
     // Resolve the actual next question. Recompute *after* saving, since saving just
     // consumed one question from the pool and may have advanced the stage.
-    const stageAfter = getCurrentStageId();
+    const stageAfter = await getCurrentStageId();
     let nextQuestion = null;
     if (stageAfter !== null) {
-      const pool = getRemainingQuestions(stageAfter);
+      const pool = await getRemainingQuestions(stageAfter);
       nextQuestion =
         pool.find((q) => q.id === parsed.next_question_id) ?? pool[0] ?? null;
     }
@@ -117,7 +117,7 @@ ${candidateList || "(이 생애주기의 후보가 모두 소진되었습니다.
       stageAdvanced:
         stageBefore !== null && stageAfter !== null && stageAfter !== stageBefore,
       done: stageAfter === null,
-      progress: getProgressSummary(),
+      progress: await getProgressSummary(),
     });
   } catch (err) {
     console.error("[generate]", err);

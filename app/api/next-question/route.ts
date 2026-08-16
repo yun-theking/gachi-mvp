@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { pickNextQuestion, getProgressSummary } from "@/lib/questions";
 
 export async function GET() {
-  const question = pickNextQuestion();
-  const progress = getProgressSummary();
+  const question = await pickNextQuestion();
+  const progress = await getProgressSummary();
 
   if (!question) {
     return NextResponse.json({ done: true, nextQuestion: null, progress });
