@@ -1,18 +1,34 @@
 import { getDb } from "./db";
+import type { Lang } from "./auth";
 
 export const TOTAL_STAGES = 10;
 
-export const STAGE_NAMES: Record<number, string> = {
-  1: "유년기·성장배경",
-  2: "학창시절·청년기",
-  3: "사회초년·입사/창업초기",
-  4: "성장기 커리어·도전과 실패",
-  5: "전성기·리더십과 결단",
-  6: "위기와 시련·극복",
-  7: "인간관계·은사와 동료",
-  8: "가정·결혼과 사생활",
-  9: "가치관·인생철학",
-  10: "은퇴 이후·후대에 남기는 말",
+/** Full life-stage names used as archive section headers, per language. */
+export const STAGE_NAMES: Record<Lang, Record<number, string>> = {
+  ko: {
+    1: "유년기·성장배경",
+    2: "학창시절·청년기",
+    3: "사회초년·입사/창업초기",
+    4: "성장기 커리어·도전과 실패",
+    5: "전성기·리더십과 결단",
+    6: "위기와 시련·극복",
+    7: "인간관계·은사와 동료",
+    8: "가정·결혼과 사생활",
+    9: "가치관·인생철학",
+    10: "은퇴 이후·후대에 남기는 말",
+  },
+  ja: {
+    1: "幼少期・成長背景",
+    2: "学生時代・青年期",
+    3: "社会人初期・入社/創業初期",
+    4: "成長期のキャリア・挑戦と失敗",
+    5: "全盛期・リーダーシップと決断",
+    6: "危機と試練・克服",
+    7: "人間関係・恩師と同僚",
+    8: "家庭・結婚と私生活",
+    9: "価値観・人生哲学",
+    10: "引退後・後世への言葉",
+  },
 };
 
 export interface QuestionRow {
@@ -30,6 +46,7 @@ export interface EntryRow {
   question_id: number | null;
   life_stage_id: number;
   question_ko: string;
+  question_ja: string;
   transcript: string;
   chapter: string;
   created_at: string;
@@ -109,18 +126,20 @@ export async function saveEntry(entry: {
   questionId: number | null;
   lifeStageId: number;
   questionKo: string;
+  questionJa: string;
   transcript: string;
   chapter: string;
 }) {
   const db = await getDb();
   await db.execute({
     sql: `
-      INSERT INTO entries (user_id, question_id, life_stage_id, question_ko, transcript, chapter)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO entries (user_id, question_id, life_stage_id, question_ko, question_ja, transcript, chapter)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id, question_id) WHERE question_id IS NOT NULL
       DO UPDATE SET
         life_stage_id = excluded.life_stage_id,
         question_ko = excluded.question_ko,
+        question_ja = excluded.question_ja,
         transcript = excluded.transcript,
         chapter = excluded.chapter,
         created_at = datetime('now')
@@ -130,6 +149,7 @@ export async function saveEntry(entry: {
       entry.questionId,
       entry.lifeStageId,
       entry.questionKo,
+      entry.questionJa,
       entry.transcript,
       entry.chapter,
     ],
@@ -200,11 +220,25 @@ export async function pickNextQuestion(userId: string): Promise<QuestionRow | nu
   return remaining[0] ?? null;
 }
 
-/** Register a personal ID on first login (no-op if it already exists). */
-export async function registerUser(userId: string) {
+/** Register a personal ID on first login, or update its language preference on
+ * subsequent logins (no-op on the id itself if it already exists). */
+export async function registerUser(userId: string, language: Lang) {
   const db = await getDb();
   await db.execute({
-    sql: "INSERT INTO users (id) VALUES (?) ON CONFLICT(id) DO NOTHING",
+    sql: `
+      INSERT INTO users (id, language) VALUES (?, ?)
+      ON CONFLICT(id) DO UPDATE SET language = excluded.language
+    `,
+    args: [userId, language],
+  });
+}
+
+export async function getUserLanguage(userId: string): Promise<Lang | null> {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: "SELECT language FROM users WHERE id = ?",
     args: [userId],
   });
+  const value = result.rows[0]?.language as string | undefined;
+  return value === "ko" || value === "ja" ? value : null;
 }

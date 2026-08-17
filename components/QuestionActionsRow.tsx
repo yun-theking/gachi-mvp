@@ -1,3 +1,7 @@
+"use client";
+
+import { useLanguage } from "./LanguageProvider";
+
 interface Props {
   onPrevious: () => void;
   onSkip: () => void;
@@ -11,6 +15,8 @@ export default function QuestionActionsRow({
   previousDisabled,
   skipDisabled,
 }: Props) {
+  const { dict: t } = useLanguage();
+
   return (
     <div className="w-full max-w-xl grid grid-cols-2 gap-3">
       <button
@@ -18,14 +24,14 @@ export default function QuestionActionsRow({
         disabled={previousDisabled}
         className="py-4 rounded-2xl border border-border text-text font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface2 transition-colors"
       >
-        이전 질문
+        {t.previousQuestion}
       </button>
       <button
         onClick={onSkip}
         disabled={skipDisabled}
         className="py-4 rounded-2xl bg-surface2 text-text-dim font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-border transition-colors"
       >
-        건너뛰기
+        {t.skipQuestion}
       </button>
     </div>
   );

@@ -1,4 +1,5 @@
 import { IconMic } from "./icons";
+import { useLanguage } from "./LanguageProvider";
 
 export type Step = "idle" | "recording" | "transcribing" | "generating" | "done" | "error";
 
@@ -22,6 +23,7 @@ export default function RecordButton({
   onClick,
   disabled,
 }: Props) {
+  const { dict: t } = useLanguage();
   const busy = step === "transcribing" || step === "generating";
   const recording = step === "recording";
 
@@ -29,9 +31,12 @@ export default function RecordButton({
     <div className="w-full max-w-xl flex flex-col items-center gap-4 py-4">
       <p className="text-sm text-text-dim text-center leading-relaxed">
         {step === "idle" || step === "done" || step === "error"
-          ? "아래 버튼을 누르고\n편하게 말씀해주세요"
-              .split("\n")
-              .map((line, i) => <span key={i}>{line}<br /></span>)
+          ? t.recordIdle.split("\n").map((line, i) => (
+              <span key={i}>
+                {line}
+                <br />
+              </span>
+            ))
           : statusText}
       </p>
 
@@ -72,7 +77,7 @@ export default function RecordButton({
       </button>
 
       <p className="font-bold text-text text-lg">
-        {recording ? "녹음 중지" : busy ? statusText : actionLabel}
+        {recording ? t.recordStop : busy ? statusText : actionLabel}
       </p>
 
       <div

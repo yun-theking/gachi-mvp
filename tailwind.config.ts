@@ -24,8 +24,8 @@ const config: Config = {
         danger: "#B8452F",
       },
       fontFamily: {
-        serif: ["'Noto Serif KR'", "serif"],
-        sans: ["'Noto Sans KR'", "sans-serif"],
+        serif: ["'Noto Serif KR'", "'Noto Serif JP'", "serif"],
+        sans: ["'Noto Sans KR'", "'Noto Sans JP'", "sans-serif"],
       },
     },
   },

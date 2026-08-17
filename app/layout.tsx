@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import AppChrome from "@/components/AppChrome";
-import { USER_COOKIE } from "@/lib/auth";
+import { LanguageProvider } from "@/components/LanguageProvider";
+import { USER_COOKIE, LANG_COOKIE, DEFAULT_LANG, isValidLang } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,18 +17,22 @@ export default async function RootLayout({
 }>) {
   const store = await cookies();
   const userId = store.get(USER_COOKIE)?.value ?? null;
+  const langCookie = store.get(LANG_COOKIE)?.value;
+  const lang = isValidLang(langCookie) ? langCookie : DEFAULT_LANG;
 
   return (
-    <html lang="ko">
+    <html lang={lang}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500&family=Noto+Serif+JP:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;500&display=swap"
           rel="stylesheet"
         />
       </head>
       <body className="antialiased bg-bg text-text font-sans min-h-screen">
-        <AppChrome userId={userId}>{children}</AppChrome>
+        <LanguageProvider lang={lang}>
+          <AppChrome userId={userId}>{children}</AppChrome>
+        </LanguageProvider>
       </body>
     </html>
   );

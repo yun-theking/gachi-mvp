@@ -7,6 +7,7 @@ import ChapterPanel from "@/components/ChapterPanel";
 import StageProgress from "@/components/StageProgress";
 import QuestionActionsRow from "@/components/QuestionActionsRow";
 import { IconChevronLeft } from "@/components/icons";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface HistoryEntry {
   role: "user" | "assistant";
@@ -35,6 +36,8 @@ interface PreviousEntry {
 }
 
 export default function Home() {
+  const { lang, dict: t } = useLanguage();
+
   const [step, setStep] = useState<Step>("idle");
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [error, setError] = useState("");
@@ -43,7 +46,6 @@ export default function Home() {
   const [currentQuestion, setCurrentQuestion] = useState<BankQuestion | null>(null);
   const [currentStageId, setCurrentStageId] = useState<number | null>(1);
   const [stagePosition, setStagePosition] = useState<StagePos | null>(null);
-  const [showJapanese, setShowJapanese] = useState(false);
   const [progress, setProgress] = useState<Progress>({ totalAnswered: 0, totalQuestions: 0 });
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -103,10 +105,11 @@ export default function Home() {
         setRecordingSeconds((s) => s + 1);
       }, 1000);
     } catch {
-      setError("마이크 접근이 거부되었습니다. 브라우저 설정을 확인해주세요.");
+      setError(t.micDenied);
       setStep("error");
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
 
   const stopRecording = useCallback(() => {
     const mediaRecorder = mediaRecorderRef.current;
@@ -138,7 +141,7 @@ export default function Home() {
         body: formData,
       });
       const transcribeData = await transcribeRes.json();
-      if (!transcribeRes.ok) throw new Error(transcribeData.error || "STT 실패");
+      if (!transcribeRes.ok) throw new Error(transcribeData.error || "STT failed");
 
       const text: string = transcribeData.text;
       setLastTranscript(text);
@@ -154,7 +157,7 @@ export default function Home() {
         }),
       });
       const generateData = await generateRes.json();
-      if (!generateRes.ok) throw new Error(generateData.error || "생성 실패");
+      if (!generateRes.ok) throw new Error(generateData.error || t.loginErrorGeneric);
 
       setLastChapter(generateData.chapter);
 
@@ -162,11 +165,11 @@ export default function Home() {
         // Redoing an old question doesn't move the current pointer — the API
         // returns the same still-current question, so just resync state and
         // hop back to the normal flow.
-        setNoteText("이전 답변이 수정됐어요");
+        setNoteText(t.redoSavedNote);
         setMode("normal");
         setPreviousEntry(null);
       } else if (generateData.stageAdvanced) {
-        setNoteText("다음 생애주기로 넘어갑니다 →");
+        setNoteText(t.stageAdvancedNote);
       }
 
       setCurrentQuestion(generateData.nextQuestion);
@@ -182,7 +185,7 @@ export default function Home() {
 
       setStep("done");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : t.loginErrorGeneric);
       setStep("error");
     }
   };
@@ -194,7 +197,7 @@ export default function Home() {
       const res = await fetch("/api/previous-question");
       const data = await res.json();
       if (!data.entry) {
-        setNoteText("아직 답변한 질문이 없어요");
+        setNoteText(t.noPreviousNote);
         return;
       }
       setPreviousEntry(data.entry);
@@ -226,16 +229,16 @@ export default function Home() {
     setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
     setStagePosition(data.stagePosition);
     setProgress(data.progress);
-    setNoteText("질문을 건너뛰었어요");
+    setNoteText(t.skippedNote);
   };
 
   const busy = step === "transcribing" || step === "generating";
 
   const statusText = (() => {
     if (step === "error") return error;
-    if (step === "recording") return "녹음 중 — 편하게 이야기해보세요";
-    if (step === "transcribing") return "음성을 텍스트로 변환하고 있어요…";
-    if (step === "generating") return "회고록 챕터를 작성하고 있어요…";
+    if (step === "recording") return t.recording;
+    if (step === "transcribing") return t.transcribing;
+    if (step === "generating") return t.generating;
     return "";
   })();
 
@@ -250,6 +253,12 @@ export default function Home() {
       }
     : null;
 
+  const previousQuestionText = previousEntry
+    ? lang === "ja"
+      ? previousEntry.questionJa
+      : previousEntry.questionKo
+    : "";
+
   return (
     <main className="min-h-screen flex flex-col items-center gap-5 px-4 py-6">
       {mode === "redo" ? (
@@ -260,23 +269,20 @@ export default function Home() {
               className="flex items-center gap-1 text-xs text-text-dim hover:text-accent transition-colors"
             >
               <IconChevronLeft className="w-4 h-4" />
-              현재 질문으로 돌아가기
+              {t.backToCurrent}
             </button>
           </div>
 
           <p className="w-full max-w-xl text-xs text-accent-dark font-semibold">
-            이전 질문에 다시 답변하기
+            {t.redoHeading}
           </p>
 
-          <QuestionCard
-            question={redoQuestion}
-            showJapanese={showJapanese}
-            onToggleJapanese={() => setShowJapanese((v) => !v)}
-          />
+          <QuestionCard question={redoQuestion} />
 
           {previousEntry && (
             <ChapterPanel
-              label="이전 답변"
+              label={t.previousAnswerLabel}
+              questionKo={previousQuestionText}
               chapter={previousEntry.chapter}
               transcript={previousEntry.transcript}
             />
@@ -286,7 +292,7 @@ export default function Home() {
             step={step}
             recordingSeconds={recordingSeconds}
             statusText={statusText}
-            actionLabel="다시 답변 시작하기"
+            actionLabel={t.redoAction}
             onClick={step === "recording" ? stopRecording : startRecording}
             disabled={busy}
           />
@@ -304,17 +310,13 @@ export default function Home() {
 
           {noteText && <p className="w-full max-w-xl text-xs text-accent">{noteText}</p>}
 
-          <QuestionCard
-            question={currentQuestion}
-            showJapanese={showJapanese}
-            onToggleJapanese={() => setShowJapanese((v) => !v)}
-          />
+          <QuestionCard question={currentQuestion} />
 
           <RecordButton
             step={step}
             recordingSeconds={recordingSeconds}
             statusText={statusText}
-            actionLabel="답변 시작하기"
+            actionLabel={t.recordAction}
             onClick={step === "recording" ? stopRecording : startRecording}
             disabled={(!currentQuestion && step === "idle") || busy}
           />
@@ -327,7 +329,7 @@ export default function Home() {
           />
 
           {lastChapter && (
-            <ChapterPanel label="방금 남긴 이야기" transcript={lastTranscript} chapter={lastChapter} />
+            <ChapterPanel label={t.justAnsweredLabel} transcript={lastTranscript} chapter={lastChapter} />
           )}
         </>
       )}

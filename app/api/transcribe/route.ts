@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { LANG_COOKIE, DEFAULT_LANG, isValidLang } from "@/lib/auth";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -7,6 +8,9 @@ const openai = new OpenAI({
 
 export async function POST(req: NextRequest) {
   try {
+    const langCookie = req.cookies.get(LANG_COOKIE)?.value;
+    const lang = isValidLang(langCookie) ? langCookie : DEFAULT_LANG;
+
     const formData = await req.formData();
     const audioFile = formData.get("audio") as File | null;
 
@@ -20,7 +24,7 @@ export async function POST(req: NextRequest) {
     const transcription = await openai.audio.transcriptions.create({
       file,
       model: "whisper-1",
-      language: "ko",
+      language: lang,
     });
 
     return NextResponse.json({ text: transcription.text });

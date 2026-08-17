@@ -60,6 +60,7 @@ async function createSchema(db: Client) {
       question_id INTEGER REFERENCES questions(id),
       life_stage_id INTEGER NOT NULL,
       question_ko TEXT NOT NULL,
+      question_ja TEXT NOT NULL DEFAULT '',
       transcript TEXT NOT NULL,
       chapter TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -67,6 +68,7 @@ async function createSchema(db: Client) {
 
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
+      language TEXT NOT NULL DEFAULT 'ko',
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -104,6 +106,22 @@ async function migrateSchema(db: Client) {
        PRIMARY KEY (user_id, question_id)
      )`
   );
+
+  const entryCols = await db.execute("PRAGMA table_info(entries)");
+  const hasQuestionJa = entryCols.rows.some(
+    (r) => (r as unknown as { name: string }).name === "question_ja"
+  );
+  if (!hasQuestionJa) {
+    await db.execute("ALTER TABLE entries ADD COLUMN question_ja TEXT NOT NULL DEFAULT ''");
+  }
+
+  const userCols = await db.execute("PRAGMA table_info(users)");
+  const hasLanguage = userCols.rows.some(
+    (r) => (r as unknown as { name: string }).name === "language"
+  );
+  if (!hasLanguage) {
+    await db.execute("ALTER TABLE users ADD COLUMN language TEXT NOT NULL DEFAULT 'ko'");
+  }
 }
 
 async function seedQuestions(db: Client) {

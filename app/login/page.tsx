@@ -2,6 +2,8 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { Lang } from "@/lib/auth";
+import { getDict } from "@/lib/i18n";
 
 export default function LoginPage() {
   return (
@@ -14,13 +16,16 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [lang, setLang] = useState<Lang>("ko");
   const [userId, setUserId] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const t = getDict(lang);
+
   const submit = async () => {
     if (!/^[0-9]{1,10}$/.test(userId)) {
-      setError("숫자로만 1~10자리 입력해주세요.");
+      setError(t.loginErrorFormat);
       return;
     }
     setLoading(true);
@@ -29,14 +34,14 @@ function LoginForm() {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId, language: lang }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "입장 실패");
+      if (!res.ok) throw new Error(data.error || t.loginErrorGeneric);
       router.replace(searchParams.get("next") || "/");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : t.loginErrorGeneric);
       setLoading(false);
     }
   };
@@ -47,16 +52,42 @@ function LoginForm() {
         <div className="flex items-center justify-center gap-3 mb-2">
           <span className="w-1.5 h-1.5 rounded-full bg-accent" />
           <h1 className="font-serif text-3xl font-bold text-accent-dark tracking-wide">
-            가치
+            {t.loginTitle}
           </h1>
           <span className="w-1.5 h-1.5 rounded-full bg-accent" />
         </div>
-        <p className="text-sm text-text-dim">
-          나만의 번호를 입력하고 입장해주세요
-        </p>
+        <p className="text-sm text-text-dim">{t.loginSubtitle}</p>
       </header>
 
-      <div className="w-full max-w-xs flex flex-col gap-4">
+      <div className="w-full max-w-xs flex flex-col gap-5">
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-text-muted text-center">{t.loginLanguageLabel}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setLang("ko")}
+              className={`py-3 rounded-2xl border font-medium transition-colors ${
+                lang === "ko"
+                  ? "bg-accent text-bg border-accent"
+                  : "bg-surface text-text-dim border-border hover:bg-surface2"
+              }`}
+            >
+              한국어
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang("ja")}
+              className={`py-3 rounded-2xl border font-medium transition-colors ${
+                lang === "ja"
+                  ? "bg-accent text-bg border-accent"
+                  : "bg-surface text-text-dim border-border hover:bg-surface2"
+              }`}
+            >
+              日本語
+            </button>
+          </div>
+        </div>
+
         <input
           type="text"
           inputMode="numeric"
@@ -65,7 +96,7 @@ function LoginForm() {
           value={userId}
           onChange={(e) => setUserId(e.target.value.replace(/[^0-9]/g, ""))}
           onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="예: 1234"
+          placeholder={t.loginPlaceholder}
           maxLength={10}
           className="w-full text-center text-3xl tracking-widest py-5 rounded-2xl bg-surface border border-border text-text placeholder:text-text-muted focus:outline-none focus:border-accent"
         />
@@ -77,13 +108,13 @@ function LoginForm() {
           disabled={loading || userId.length === 0}
           className="w-full py-5 rounded-2xl bg-accent text-bg font-semibold text-lg tracking-wide disabled:opacity-40 transition-opacity"
         >
-          {loading ? "입장 중…" : "입장하기"}
+          {loading ? t.loginButtonLoading : t.loginButton}
         </button>
 
         <p className="text-xs text-text-muted text-center leading-relaxed">
-          처음 입력하는 번호면 자동으로 새 계정이 만들어져요.
+          {t.loginHint1}
           <br />
-          다음에 올 때도 같은 번호로 들어오면 이어서 진행돼요.
+          {t.loginHint2}
         </p>
       </div>
     </main>

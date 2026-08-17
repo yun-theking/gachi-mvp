@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { IconKey, IconBook, IconGear } from "./icons";
-
-const TABS = [
-  { href: "/", label: "인터뷰", Icon: IconKey },
-  { href: "/archive", label: "내 회고록", Icon: IconBook },
-  { href: "/settings", label: "설정", Icon: IconGear },
-];
+import { useLanguage } from "./LanguageProvider";
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { dict: t } = useLanguage();
+
+  const TABS = [
+    { href: "/", label: t.navInterview, Icon: IconKey },
+    { href: "/archive", label: t.navArchive, Icon: IconBook },
+    { href: "/settings", label: t.navSettings, Icon: IconGear },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-20 bg-bg/95 backdrop-blur border-t border-border">
