@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import type { Lang } from "@/lib/auth";
 import { getDict } from "@/lib/i18n";
 
@@ -48,14 +49,8 @@ function LoginForm() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-8 py-12 px-4">
-      <header className="text-center mb-2">
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-          <h1 className="font-serif text-3xl font-bold text-accent-dark tracking-wide">
-            {t.loginTitle}
-          </h1>
-          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-        </div>
+      <header className="text-center mb-2 flex flex-col items-center gap-3">
+        <Image src="/logo.png" alt="Gachi" width={161} height={68} priority />
         <p className="text-sm text-text-dim">{t.loginSubtitle}</p>
       </header>
 

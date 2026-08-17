@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { USER_COOKIE } from "@/lib/auth";
 
 const PUBLIC_PREFIXES = ["/login", "/api/login", "/admin", "/api/admin"];
+const STATIC_FILE_RE = /\.(?:png|jpg|jpeg|svg|webp|gif|ico)$/i;
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
+  if (STATIC_FILE_RE.test(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
@@ -22,5 +23,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/|favicon.ico).*)"],
+  matcher: ["/((?!_next/).*)"],
 };

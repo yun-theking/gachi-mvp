@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import { IconMenu, IconUser } from "./icons";
 import { useLanguage } from "./LanguageProvider";
 
@@ -10,11 +11,12 @@ export default function TopBar({ userId }: { userId: string | null }) {
   const pathname = usePathname();
   const { dict: t } = useLanguage();
 
+  const isInterview = !pathname.startsWith("/archive") && !pathname.startsWith("/settings");
   const title = pathname.startsWith("/archive")
     ? t.navArchive
     : pathname.startsWith("/settings")
     ? t.navSettings
-    : t.appName + " " + t.navInterview;
+    : t.navInterview;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -53,13 +55,16 @@ export default function TopBar({ userId }: { userId: string | null }) {
           </button>
           {menuOpen && (
             <div className="absolute left-0 top-11 w-64 bg-surface border border-border rounded-xl p-4 shadow-lg">
-              <p className="font-serif text-accent-dark font-semibold mb-1">{t.appName}</p>
+              <Image src="/logo.png" alt="Gachi" width={92} height={39} className="mb-2" />
               <p className="text-xs text-text-dim leading-relaxed">{t.appTagline}</p>
             </div>
           )}
         </div>
 
-        <h1 className="font-serif text-base font-bold text-text tracking-wide">{title}</h1>
+        <h1 className="flex items-center gap-2 font-serif text-base font-bold text-text tracking-wide">
+          {isInterview && <Image src="/logo.png" alt="Gachi" width={64} height={27} />}
+          <span>{title}</span>
+        </h1>
 
         <div className="relative" ref={profileRef}>
           <button
