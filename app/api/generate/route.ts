@@ -6,6 +6,7 @@ import {
   getRemainingQuestions,
   saveEntry,
   getProgressSummary,
+  getStagePosition,
 } from "@/lib/questions";
 import { USER_COOKIE } from "@/lib/auth";
 
@@ -121,6 +122,9 @@ ${candidateList || "(이 생애주기의 후보가 모두 소진되었습니다.
             question_ko: nextQuestion.question_ko,
             question_ja: nextQuestion.question_ja,
           }
+        : null,
+      stagePosition: nextQuestion
+        ? await getStagePosition(nextQuestion.life_stage_id, nextQuestion.id)
         : null,
       stageAdvanced:
         stageBefore !== null && stageAfter !== null && stageAfter !== stageBefore,

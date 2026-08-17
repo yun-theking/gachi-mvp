@@ -35,7 +35,13 @@ export interface EntryRow {
   created_at: string;
 }
 
-/** Lowest-numbered life stage that still has unanswered questions for this user, or null if all 106 are done. */
+export interface StagePosition {
+  position: number;
+  total: number;
+}
+
+/** Lowest-numbered life stage that still has unanswered (and unskipped) questions for
+ * this user, or null if all 106 are resolved. */
 export async function getCurrentStageId(userId: string): Promise<number | null> {
   for (let stage = 1; stage <= TOTAL_STAGES; stage++) {
     if ((await getRemainingQuestions(userId, stage)).length > 0) return stage;
@@ -56,11 +62,34 @@ export async function getRemainingQuestions(
           SELECT question_id FROM entries
           WHERE question_id IS NOT NULL AND user_id = ?
         )
+        AND q.id NOT IN (
+          SELECT question_id FROM skipped_questions WHERE user_id = ?
+        )
       ORDER BY q.id
     `,
-    args: [stageId, userId],
+    args: [stageId, userId, userId],
   });
   return result.rows as unknown as QuestionRow[];
+}
+
+export async function getAllQuestionsInStage(stageId: number): Promise<QuestionRow[]> {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: "SELECT * FROM questions WHERE life_stage_id = ? ORDER BY id",
+    args: [stageId],
+  });
+  return result.rows as unknown as QuestionRow[];
+}
+
+/** Question's position within its own life stage, e.g. "3번째 / 11개". Used for the
+ * "OO개 질문 중 N번째" progress line — this is per-stage, not the overall 106 count. */
+export async function getStagePosition(
+  stageId: number,
+  questionId: number
+): Promise<StagePosition> {
+  const all = await getAllQuestionsInStage(stageId);
+  const idx = all.findIndex((q) => q.id === questionId);
+  return { position: idx === -1 ? 1 : idx + 1, total: all.length };
 }
 
 export async function getQuestionById(id: number): Promise<QuestionRow | undefined> {
@@ -72,6 +101,9 @@ export async function getQuestionById(id: number): Promise<QuestionRow | undefin
   return result.rows[0] as unknown as QuestionRow | undefined;
 }
 
+/** Insert a new answer, or overwrite the existing one if this (user, question) was
+ * already answered before — this is what makes "이전 질문 다시 답변" work without
+ * creating duplicate rows. */
 export async function saveEntry(entry: {
   userId: string;
   questionId: number | null;
@@ -82,8 +114,17 @@ export async function saveEntry(entry: {
 }) {
   const db = await getDb();
   await db.execute({
-    sql: `INSERT INTO entries (user_id, question_id, life_stage_id, question_ko, transcript, chapter)
-          VALUES (?, ?, ?, ?, ?, ?)`,
+    sql: `
+      INSERT INTO entries (user_id, question_id, life_stage_id, question_ko, transcript, chapter)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, question_id) WHERE question_id IS NOT NULL
+      DO UPDATE SET
+        life_stage_id = excluded.life_stage_id,
+        question_ko = excluded.question_ko,
+        transcript = excluded.transcript,
+        chapter = excluded.chapter,
+        created_at = datetime('now')
+    `,
     args: [
       entry.userId,
       entry.questionId,
@@ -92,6 +133,30 @@ export async function saveEntry(entry: {
       entry.transcript,
       entry.chapter,
     ],
+  });
+
+  // Redoing a question that was previously skipped should un-skip it.
+  if (entry.questionId !== null) {
+    await db.execute({
+      sql: "DELETE FROM skipped_questions WHERE user_id = ? AND question_id = ?",
+      args: [entry.userId, entry.questionId],
+    });
+  }
+}
+
+/** Mark a question as skipped for this user so it's excluded from the pool without
+ * an entry being created. Skipping something already answered is a no-op. */
+export async function skipQuestion(userId: string, questionId: number) {
+  const db = await getDb();
+  const existing = await db.execute({
+    sql: "SELECT 1 FROM entries WHERE user_id = ? AND question_id = ?",
+    args: [userId, questionId],
+  });
+  if (existing.rows.length > 0) return;
+
+  await db.execute({
+    sql: "INSERT INTO skipped_questions (user_id, question_id) VALUES (?, ?) ON CONFLICT DO NOTHING",
+    args: [userId, questionId],
   });
 }
 
@@ -102,6 +167,16 @@ export async function getAllEntries(userId: string): Promise<EntryRow[]> {
     args: [userId],
   });
   return result.rows as unknown as EntryRow[];
+}
+
+/** Most recently answered entry — this is what the "이전 질문" button surfaces. */
+export async function getLastAnsweredEntry(userId: string): Promise<EntryRow | null> {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: "SELECT * FROM entries WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+    args: [userId],
+  });
+  return (result.rows[0] as unknown as EntryRow | undefined) ?? null;
 }
 
 export async function getProgressSummary(userId: string) {
@@ -117,7 +192,7 @@ export async function getProgressSummary(userId: string) {
   };
 }
 
-/** Pick the next question to ask this user: first unanswered question in their current stage. */
+/** Pick the next question to ask this user: first remaining question in their current stage. */
 export async function pickNextQuestion(userId: string): Promise<QuestionRow | null> {
   const stageId = await getCurrentStageId(userId);
   if (stageId === null) return null;

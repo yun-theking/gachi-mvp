@@ -21,7 +21,7 @@ export default function QuestionCard({
   if (!question) {
     return (
       <div className="w-full max-w-xl bg-surface border border-border rounded-2xl p-8 text-center">
-        <p className="font-serif text-gold-light text-lg mb-2">
+        <p className="font-serif text-accent-dark font-semibold text-lg mb-2">
           106개 질문을 모두 마쳤습니다
         </p>
         <p className="text-text-dim text-sm">
@@ -32,19 +32,19 @@ export default function QuestionCard({
   }
 
   return (
-    <div className="w-full max-w-xl bg-surface border border-border rounded-2xl p-7 flex flex-col gap-3">
+    <div className="w-full max-w-xl bg-surface border border-border rounded-2xl p-6 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-[0.65rem] tracking-widest uppercase text-gold-dim">
+        <span className="text-xs font-semibold text-accent-dark">
           {question.life_stage_ko}
         </span>
         <button
           onClick={onToggleJapanese}
-          className="text-[0.65rem] tracking-widest uppercase text-text-muted hover:text-gold transition-colors"
+          className="text-[0.65rem] tracking-widest uppercase text-text-muted hover:text-accent transition-colors"
         >
           {showJapanese ? "한국어만" : "日本語"}
         </button>
       </div>
-      <p className="font-serif text-text text-lg leading-relaxed">
+      <p className="font-bold text-text text-xl leading-relaxed">
         {question.question_ko}
       </p>
       {showJapanese && (

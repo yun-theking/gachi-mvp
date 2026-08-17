@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import UserNav from "@/components/UserNav";
+import { cookies } from "next/headers";
+import AppChrome from "@/components/AppChrome";
+import { USER_COOKIE } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,11 +9,14 @@ export const metadata: Metadata = {
   description: "닛케이「私の履歴書」106개 질문으로 완성하는 나의 이야기",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const store = await cookies();
+  const userId = store.get(USER_COOKIE)?.value ?? null;
+
   return (
     <html lang="ko">
       <head>
@@ -23,18 +27,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased bg-bg text-text font-sans min-h-screen">
-        <nav className="w-full max-w-xl mx-auto flex items-center justify-between pt-8 text-xs tracking-widest uppercase text-text-muted">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="hover:text-gold transition-colors">
-              인터뷰
-            </Link>
-            <Link href="/archive" className="hover:text-gold transition-colors">
-              내 회고록
-            </Link>
-          </div>
-          <UserNav />
-        </nav>
-        {children}
+        <AppChrome userId={userId}>{children}</AppChrome>
       </body>
     </html>
   );

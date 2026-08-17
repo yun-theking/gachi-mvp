@@ -28,16 +28,11 @@ export default async function ArchivePage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center gap-8 py-12 px-4">
-      <header className="text-center mb-2">
-        <h1 className="font-serif text-3xl font-bold text-gold-light tracking-wide mb-2">
-          내 회고록
-        </h1>
-        <p className="text-xs text-text-dim tracking-widest uppercase">
-          {progress.totalAnswered}/{progress.totalQuestions} 질문 답변 완료 ·{" "}
-          {stagesStarted}/{TOTAL_STAGES} 생애주기 진행중
-        </p>
-      </header>
+    <main className="min-h-screen flex flex-col items-center gap-8 py-8 px-4">
+      <p className="text-xs text-text-dim tracking-widest uppercase text-center">
+        {progress.totalAnswered}/{progress.totalQuestions} 질문 답변 완료 ·{" "}
+        {stagesStarted}/{TOTAL_STAGES} 생애주기 진행중
+      </p>
 
       {entries.length === 0 ? (
         <div className="w-full max-w-xl bg-surface border border-border rounded-2xl p-10 text-center">
@@ -51,7 +46,7 @@ export default async function ArchivePage() {
             .filter((stageId) => byStage.has(stageId))
             .map((stageId) => (
               <section key={stageId} className="flex flex-col gap-4">
-                <h2 className="font-serif text-lg text-gold-light border-b border-border pb-2">
+                <h2 className="font-serif text-lg text-accent-dark border-b border-border pb-2">
                   {stageId}. {STAGE_NAMES[stageId]}
                 </h2>
                 {byStage.get(stageId)!.map((entry) => (

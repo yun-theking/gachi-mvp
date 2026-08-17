@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { pickNextQuestion, getProgressSummary } from "@/lib/questions";
+import { pickNextQuestion, getProgressSummary, getStagePosition } from "@/lib/questions";
 import { USER_COOKIE } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
@@ -12,8 +12,10 @@ export async function GET(req: NextRequest) {
   const progress = await getProgressSummary(userId);
 
   if (!question) {
-    return NextResponse.json({ done: true, nextQuestion: null, progress });
+    return NextResponse.json({ done: true, nextQuestion: null, progress, stagePosition: null });
   }
+
+  const stagePosition = await getStagePosition(question.life_stage_id, question.id);
 
   return NextResponse.json({
     done: false,
@@ -26,5 +28,6 @@ export async function GET(req: NextRequest) {
       question_ja: question.question_ja,
     },
     progress,
+    stagePosition,
   });
 }

@@ -1,29 +1,24 @@
-export type Step =
-  | "idle"
-  | "recording"
-  | "transcribing"
-  | "generating"
-  | "done"
-  | "error";
+import { IconMic } from "./icons";
+
+export type Step = "idle" | "recording" | "transcribing" | "generating" | "done" | "error";
 
 interface Props {
   step: Step;
   recordingSeconds: number;
   statusText: string;
+  actionLabel: string;
   onClick: () => void;
   disabled?: boolean;
 }
 
 const fmt = (s: number) =>
-  `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(
-    2,
-    "0"
-  )}`;
+  `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 export default function RecordButton({
   step,
   recordingSeconds,
   statusText,
+  actionLabel,
   onClick,
   disabled,
 }: Props) {
@@ -31,19 +26,25 @@ export default function RecordButton({
   const recording = step === "recording";
 
   return (
-    <div className="bg-surface border border-border rounded-3xl p-10 flex flex-col items-center gap-6 w-full max-w-xl relative overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-60 h-px bg-gradient-to-r from-transparent via-gold-dim to-transparent" />
+    <div className="w-full max-w-xl flex flex-col items-center gap-4 py-4">
+      <p className="text-sm text-text-dim text-center leading-relaxed">
+        {step === "idle" || step === "done" || step === "error"
+          ? "아래 버튼을 누르고\n편하게 말씀해주세요"
+              .split("\n")
+              .map((line, i) => <span key={i}>{line}<br /></span>)
+          : statusText}
+      </p>
 
-      {/* Waveform */}
+      {/* Waveform while recording */}
       <div
-        className={`flex items-end gap-1 h-9 transition-opacity duration-300 ${
+        className={`flex items-end gap-1 h-8 transition-opacity duration-300 ${
           recording ? "opacity-100" : "opacity-0"
         }`}
       >
         {Array.from({ length: 12 }).map((_, i) => (
           <span
             key={i}
-            className="wave-bar w-[3px] rounded bg-gold"
+            className="wave-bar w-[3px] rounded bg-accent"
             style={{ animationDelay: `${(i % 6) * 0.08}s`, height: 8 }}
           />
         ))}
@@ -52,67 +53,37 @@ export default function RecordButton({
       <button
         onClick={onClick}
         disabled={disabled || busy}
-        className={`w-24 h-24 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg transition-all duration-150
+        className={`w-28 h-28 rounded-full flex items-center justify-center shadow-lg transition-all duration-150
           ${
             recording
-              ? "bg-gradient-to-br from-danger to-red-800 recording-pulse"
+              ? "bg-gradient-to-br from-danger to-[#8f2e1c] recording-pulse"
               : busy
-              ? "bg-gradient-to-br from-[#3a3530] to-[#2a2520] cursor-not-allowed"
-              : "bg-gradient-to-br from-gold to-[#a07840] hover:scale-105 active:scale-95"
+              ? "bg-surface2 cursor-not-allowed"
+              : "bg-gradient-to-br from-accent to-accent-dark hover:scale-105 active:scale-95"
           }`}
       >
         {recording ? (
-          <>
-            <span className="text-2xl leading-none">⏹</span>
-            <span className="text-[0.6rem] tracking-widest uppercase text-white/80">
-              중지
-            </span>
-          </>
-        ) : step === "transcribing" ? (
-          <>
-            <span className="text-2xl leading-none animate-spin">⏳</span>
-            <span className="text-[0.6rem] tracking-widest uppercase text-white/60">
-              변환중
-            </span>
-          </>
-        ) : step === "generating" ? (
-          <>
-            <span className="text-2xl leading-none animate-pulse">✍️</span>
-            <span className="text-[0.6rem] tracking-widest uppercase text-white/60">
-              작성중
-            </span>
-          </>
+          <span className="w-6 h-6 rounded-sm bg-white/90" />
+        ) : busy ? (
+          <span className="text-3xl text-text-dim animate-spin">⏳</span>
         ) : (
-          <>
-            <span className="text-3xl leading-none">🎙️</span>
-            <span className="text-[0.6rem] tracking-widest uppercase text-white/80">
-              답변
-            </span>
-          </>
+          <IconMic className="w-9 h-9 text-white" />
         )}
       </button>
 
+      <p className="font-bold text-text text-lg">
+        {recording ? "녹음 중지" : busy ? statusText : actionLabel}
+      </p>
+
       <div
-        className={`font-mono text-2xl font-light tracking-wider text-gold-light transition-opacity duration-300 ${
+        className={`font-mono text-xl font-light tracking-wider text-accent-dark transition-opacity duration-300 ${
           recording ? "opacity-100" : "opacity-0"
         }`}
       >
         {fmt(recordingSeconds)}
       </div>
 
-      <p
-        className={`text-sm text-center min-h-[18px] ${
-          step === "error"
-            ? "text-danger"
-            : recording
-            ? "text-danger"
-            : busy
-            ? "text-gold"
-            : "text-text-dim"
-        }`}
-      >
-        {statusText}
-      </p>
+      {step === "error" && <p className="text-sm text-danger text-center">{statusText}</p>}
     </div>
   );
 }

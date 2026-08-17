@@ -69,6 +69,13 @@ async function createSchema(db: Client) {
       id TEXT PRIMARY KEY,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS skipped_questions (
+      user_id TEXT NOT NULL,
+      question_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (user_id, question_id)
+    );
   `);
 }
 
@@ -80,6 +87,23 @@ async function migrateSchema(db: Client) {
   if (!hasUserId) {
     await db.execute("ALTER TABLE entries ADD COLUMN user_id TEXT NOT NULL DEFAULT '0'");
   }
+
+  // Lets saveEntry() upsert: redoing a previously-answered question overwrites
+  // that row instead of creating a duplicate. NULLs (free-form answers with no
+  // question_id) are excluded so they never collide with each other.
+  await db.execute(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_entries_user_question
+     ON entries(user_id, question_id) WHERE question_id IS NOT NULL`
+  );
+
+  await db.execute(
+    `CREATE TABLE IF NOT EXISTS skipped_questions (
+       user_id TEXT NOT NULL,
+       question_id INTEGER NOT NULL,
+       created_at TEXT NOT NULL DEFAULT (datetime('now')),
+       PRIMARY KEY (user_id, question_id)
+     )`
+  );
 }
 
 async function seedQuestions(db: Client) {

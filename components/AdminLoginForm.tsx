@@ -34,13 +34,13 @@ export default function AdminLoginForm() {
         onChange={(e) => setPassword(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
         placeholder="관리자 비밀번호"
-        className="w-full text-center text-lg py-4 rounded-2xl bg-surface border border-border text-text placeholder:text-text-muted focus:outline-none focus:border-gold"
+        className="w-full text-center text-lg py-4 rounded-2xl bg-surface border border-border text-text placeholder:text-text-muted focus:outline-none focus:border-accent"
       />
       {error && <p className="text-sm text-danger text-center">{error}</p>}
       <button
         onClick={submit}
         disabled={loading || password.length === 0}
-        className="w-full py-4 rounded-2xl bg-gold text-bg font-semibold tracking-wide disabled:opacity-40 transition-opacity"
+        className="w-full py-4 rounded-2xl bg-accent text-bg font-semibold tracking-wide disabled:opacity-40 transition-opacity"
       >
         {loading ? "확인 중…" : "확인"}
       </button>

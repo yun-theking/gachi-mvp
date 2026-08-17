@@ -14,16 +14,16 @@ export default function ChapterPanel({
   meta,
 }: Props) {
   return (
-    <div className="panel-enter w-full max-w-xl bg-surface border border-border rounded-2xl p-7 flex flex-col gap-4">
+    <div className="panel-enter w-full max-w-xl bg-surface border border-border rounded-2xl p-6 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
-        <span className="text-[0.65rem] tracking-widest uppercase text-gold-dim flex items-center gap-2 before:content-[''] before:block before:w-5 before:h-px before:bg-gold-dim">
+        <span className="text-[0.65rem] tracking-widest uppercase text-accent-dark flex items-center gap-2 before:content-[''] before:block before:w-5 before:h-px before:bg-accent-dark">
           {label}
         </span>
         {meta && <span className="text-[0.65rem] text-text-muted">{meta}</span>}
       </div>
 
       {questionKo && (
-        <p className="text-xs text-gold-dim italic leading-relaxed">
+        <p className="text-xs text-accent-dark italic leading-relaxed">
           Q. {questionKo}
         </p>
       )}

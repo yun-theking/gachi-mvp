@@ -45,11 +45,11 @@ function LoginForm() {
     <main className="min-h-screen flex flex-col items-center justify-center gap-8 py-12 px-4">
       <header className="text-center mb-2">
         <div className="flex items-center justify-center gap-3 mb-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-gold" />
-          <h1 className="font-serif text-3xl font-bold text-gold-light tracking-wide">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+          <h1 className="font-serif text-3xl font-bold text-accent-dark tracking-wide">
             가치
           </h1>
-          <span className="w-1.5 h-1.5 rounded-full bg-gold" />
+          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
         </div>
         <p className="text-sm text-text-dim">
           나만의 번호를 입력하고 입장해주세요
@@ -67,7 +67,7 @@ function LoginForm() {
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder="예: 1234"
           maxLength={10}
-          className="w-full text-center text-3xl tracking-widest py-5 rounded-2xl bg-surface border border-border text-text placeholder:text-text-muted focus:outline-none focus:border-gold"
+          className="w-full text-center text-3xl tracking-widest py-5 rounded-2xl bg-surface border border-border text-text placeholder:text-text-muted focus:outline-none focus:border-accent"
         />
 
         {error && <p className="text-sm text-danger text-center">{error}</p>}
@@ -75,7 +75,7 @@ function LoginForm() {
         <button
           onClick={submit}
           disabled={loading || userId.length === 0}
-          className="w-full py-5 rounded-2xl bg-gold text-bg font-semibold text-lg tracking-wide disabled:opacity-40 transition-opacity"
+          className="w-full py-5 rounded-2xl bg-accent text-bg font-semibold text-lg tracking-wide disabled:opacity-40 transition-opacity"
         >
           {loading ? "입장 중…" : "입장하기"}
         </button>
