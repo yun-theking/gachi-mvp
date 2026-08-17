@@ -29,15 +29,19 @@ export default function RecordButton({
 
   return (
     <div className="w-full max-w-xl flex flex-col items-center gap-4 py-4">
-      <p className="text-sm text-text-dim text-center leading-relaxed">
-        {step === "idle" || step === "done" || step === "error"
-          ? t.recordIdle.split("\n").map((line, i) => (
-              <span key={i}>
-                {line}
-                <br />
-              </span>
-            ))
-          : statusText}
+      <p className="text-sm text-center leading-relaxed text-text-dim">
+        {step === "error" ? (
+          <span className="text-danger">{statusText}</span>
+        ) : step === "idle" || step === "done" ? (
+          t.recordIdle.split("\n").map((line, i) => (
+            <span key={i}>
+              {line}
+              <br />
+            </span>
+          ))
+        ) : (
+          statusText
+        )}
       </p>
 
       {/* Waveform while recording */}
@@ -87,8 +91,6 @@ export default function RecordButton({
       >
         {fmt(recordingSeconds)}
       </div>
-
-      {step === "error" && <p className="text-sm text-danger text-center">{statusText}</p>}
     </div>
   );
 }

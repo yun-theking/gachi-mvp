@@ -53,6 +53,13 @@ export interface Dict {
   transcribing: string;
   generating: string;
   micDenied: string;
+  micRetry: string;
+  resend: string;
+  rerecordInstead: string;
+  silenceMessage: string;
+  networkErrorMessage: string;
+  recordingTimeWarning: string;
+  recordingAutoStopped: string;
   previousQuestion: string;
   skipQuestion: string;
   backToCurrent: string;
@@ -101,6 +108,13 @@ const dict: Record<Lang, Dict> = {
     transcribing: "음성을 텍스트로 변환하고 있어요…",
     generating: "회고록 챕터를 작성하고 있어요…",
     micDenied: "마이크 접근이 거부되었습니다. 브라우저 설정을 확인해주세요.",
+    micRetry: "다시 시도",
+    resend: "다시 보내기",
+    rerecordInstead: "새로 녹음하기",
+    silenceMessage: "아무 말도 들리지 않았어요. 다시 녹음해주세요.",
+    networkErrorMessage: "네트워크 연결을 확인하고 다시 보내주세요.",
+    recordingTimeWarning: "곧 녹음이 자동으로 종료돼요",
+    recordingAutoStopped: "10분이 지나 자동으로 녹음을 종료했어요",
     previousQuestion: "이전 질문",
     skipQuestion: "건너뛰기",
     backToCurrent: "현재 질문으로 돌아가기",
@@ -149,6 +163,13 @@ const dict: Record<Lang, Dict> = {
     transcribing: "音声をテキストに変換しています…",
     generating: "回顧録の章を作成しています…",
     micDenied: "マイクへのアクセスが拒否されました。ブラウザの設定をご確認ください。",
+    micRetry: "もう一度試す",
+    resend: "送り直す",
+    rerecordInstead: "録り直す",
+    silenceMessage: "何も聞こえませんでした。もう一度録音してください。",
+    networkErrorMessage: "ネットワーク接続を確認してもう一度送信してください。",
+    recordingTimeWarning: "まもなく録音が自動的に終了します",
+    recordingAutoStopped: "10分経過したため録音を自動的に終了しました",
     previousQuestion: "前の質問",
     skipQuestion: "スキップ",
     backToCurrent: "現在の質問に戻る",

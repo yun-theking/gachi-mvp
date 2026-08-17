@@ -9,6 +9,9 @@ import QuestionActionsRow from "@/components/QuestionActionsRow";
 import { IconChevronLeft } from "@/components/icons";
 import { useLanguage } from "@/components/LanguageProvider";
 
+const MAX_RECORDING_SECONDS = 600; // 10 minutes
+const WARNING_AT_SECONDS = 570; // warn 30s before auto-stop
+
 interface HistoryEntry {
   role: "user" | "assistant";
   content: string;
@@ -35,12 +38,15 @@ interface PreviousEntry {
   chapter: string;
 }
 
+type ErrorKind = "mic" | "network" | "silence" | null;
+
 export default function Home() {
   const { lang, dict: t } = useLanguage();
 
   const [step, setStep] = useState<Step>("idle");
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [error, setError] = useState("");
+  const [errorKind, setErrorKind] = useState<ErrorKind>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   const [currentQuestion, setCurrentQuestion] = useState<BankQuestion | null>(null);
@@ -61,6 +67,11 @@ export default function Home() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Kept across a failed send so "다시 보내기" can retry without re-recording.
+  const pendingBlobRef = useRef<Blob | null>(null);
+  const pendingTextRef = useRef<string | null>(null);
+  const autoStopRef = useRef<((auto?: boolean) => void) | null>(null);
 
   const loadNextQuestion = useCallback(async () => {
     const res = await fetch("/api/next-question");
@@ -86,10 +97,15 @@ export default function Home() {
         mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
           ? "audio/webm;codecs=opus"
           : "audio/webm",
+        // Bounds file size predictably: ~4.8MB for a full 10-minute take,
+        // safely under Whisper's 25MB limit.
+        audioBitsPerSecond: 64000,
       });
 
       chunksRef.current = [];
       mediaRecorderRef.current = mediaRecorder;
+      pendingBlobRef.current = null;
+      pendingTextRef.current = null;
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -99,95 +115,170 @@ export default function Home() {
       setStep("recording");
       setRecordingSeconds(0);
       setError("");
+      setErrorKind(null);
       setNoteText("");
 
       timerRef.current = setInterval(() => {
-        setRecordingSeconds((s) => s + 1);
+        setRecordingSeconds((s) => {
+          const next = s + 1;
+          if (next >= MAX_RECORDING_SECONDS) {
+            autoStopRef.current?.(true);
+          }
+          return next;
+        });
       }, 1000);
     } catch {
       setError(t.micDenied);
+      setErrorKind("mic");
       setStep("error");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
 
-  const stopRecording = useCallback(() => {
-    const mediaRecorder = mediaRecorderRef.current;
-    if (!mediaRecorder) return;
+  const stopRecording = useCallback(
+    (auto = false) => {
+      const mediaRecorder = mediaRecorderRef.current;
+      if (!mediaRecorder) return;
 
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    mediaRecorder.onstop = async () => {
-      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-      mediaRecorder.stream.getTracks().forEach((t) => t.stop());
-      await processAudio(blob);
-    };
-
-    mediaRecorder.stop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeQuestionId, history, mode]);
-
-  const processAudio = async (blob: Blob) => {
-    setStep("transcribing");
-    try {
-      const formData = new FormData();
-      formData.append("audio", blob, "recording.webm");
-
-      const transcribeRes = await fetch("/api/transcribe", {
-        method: "POST",
-        body: formData,
-      });
-      const transcribeData = await transcribeRes.json();
-      if (!transcribeRes.ok) throw new Error(transcribeData.error || "STT failed");
-
-      const text: string = transcribeData.text;
-      setLastTranscript(text);
-
-      setStep("generating");
-      const generateRes = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text,
-          questionId: activeQuestionId,
-          history: mode === "redo" ? [] : history,
-        }),
-      });
-      const generateData = await generateRes.json();
-      if (!generateRes.ok) throw new Error(generateData.error || t.loginErrorGeneric);
-
-      setLastChapter(generateData.chapter);
-
-      if (mode === "redo") {
-        // Redoing an old question doesn't move the current pointer — the API
-        // returns the same still-current question, so just resync state and
-        // hop back to the normal flow.
-        setNoteText(t.redoSavedNote);
-        setMode("normal");
-        setPreviousEntry(null);
-      } else if (generateData.stageAdvanced) {
-        setNoteText(t.stageAdvancedNote);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
       }
 
-      setCurrentQuestion(generateData.nextQuestion);
-      setCurrentStageId(generateData.nextQuestion?.life_stage_id ?? null);
-      setStagePosition(generateData.stagePosition);
-      setProgress(generateData.progress);
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+        if (auto) setNoteText(t.recordingAutoStopped);
+        await processAudio(blob);
+      };
 
-      setHistory((prev) => [
-        ...prev,
-        { role: "user", content: text },
-        { role: "assistant", content: JSON.stringify(generateData) },
-      ]);
+      mediaRecorder.stop();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [activeQuestionId, history, mode, t]
+  );
 
-      setStep("done");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t.loginErrorGeneric);
-      setStep("error");
+  useEffect(() => {
+    autoStopRef.current = stopRecording;
+  }, [stopRecording]);
+
+  const transcribeAudio = async (blob: Blob): Promise<string> => {
+    const formData = new FormData();
+    formData.append("audio", blob, "recording.webm");
+    const res = await fetch("/api/transcribe", { method: "POST", body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "STT failed");
+    return data.text as string;
+  };
+
+  const generateChapter = async (text: string) => {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text,
+        questionId: activeQuestionId,
+        history: mode === "redo" ? [] : history,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || t.loginErrorGeneric);
+
+    setLastChapter(data.chapter);
+
+    if (mode === "redo") {
+      // Redoing an old question doesn't move the current pointer — the API
+      // returns the same still-current question, so just resync state and
+      // hop back to the normal flow.
+      setNoteText(t.redoSavedNote);
+      setMode("normal");
+      setPreviousEntry(null);
+    } else if (data.stageAdvanced) {
+      setNoteText(t.stageAdvancedNote);
     }
+
+    setCurrentQuestion(data.nextQuestion);
+    setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
+    setStagePosition(data.stagePosition);
+    setProgress(data.progress);
+
+    setHistory((prev) => [
+      ...prev,
+      { role: "user", content: text },
+      { role: "assistant", content: JSON.stringify(data) },
+    ]);
+  };
+
+  const processAudio = async (blob: Blob) => {
+    pendingBlobRef.current = blob;
+    pendingTextRef.current = null;
+    setErrorKind(null);
+    setStep("transcribing");
+
+    let text: string;
+    try {
+      text = await transcribeAudio(blob);
+    } catch {
+      // Audio is kept in pendingBlobRef — "다시 보내기" retries this exact
+      // recording without asking the person to talk again.
+      setError(t.networkErrorMessage);
+      setErrorKind("network");
+      setStep("error");
+      return;
+    }
+
+    if (!text || text.trim().length < 2) {
+      pendingBlobRef.current = null; // nothing useful to resend
+      setError(t.silenceMessage);
+      setErrorKind("silence");
+      setStep("error");
+      return;
+    }
+
+    pendingTextRef.current = text;
+    setLastTranscript(text);
+    setStep("generating");
+
+    try {
+      await generateChapter(text);
+    } catch {
+      setError(t.networkErrorMessage);
+      setErrorKind("network");
+      setStep("error");
+      return;
+    }
+
+    pendingBlobRef.current = null;
+    pendingTextRef.current = null;
+    setStep("done");
+  };
+
+  const resend = async () => {
+    setError("");
+    if (pendingTextRef.current) {
+      // Already transcribed — resume from the generate step only.
+      setStep("generating");
+      try {
+        await generateChapter(pendingTextRef.current);
+        pendingBlobRef.current = null;
+        pendingTextRef.current = null;
+        setStep("done");
+      } catch {
+        setError(t.networkErrorMessage);
+        setErrorKind("network");
+        setStep("error");
+      }
+    } else if (pendingBlobRef.current) {
+      await processAudio(pendingBlobRef.current);
+    }
+  };
+
+  const discardAndRerecord = () => {
+    pendingBlobRef.current = null;
+    pendingTextRef.current = null;
+    setErrorKind(null);
+    setError("");
+    setStep("idle");
   };
 
   const handlePrevious = async () => {
@@ -233,14 +324,19 @@ export default function Home() {
   };
 
   const busy = step === "transcribing" || step === "generating";
+  const showResendUI = step === "error" && errorKind === "network";
 
   const statusText = (() => {
     if (step === "error") return error;
-    if (step === "recording") return t.recording;
+    if (step === "recording") {
+      return recordingSeconds >= WARNING_AT_SECONDS ? t.recordingTimeWarning : t.recording;
+    }
     if (step === "transcribing") return t.transcribing;
     if (step === "generating") return t.generating;
     return "";
   })();
+
+  const micRetryActive = step === "error" && errorKind === "mic";
 
   const redoQuestion: BankQuestion | null = previousEntry
     ? {
@@ -258,6 +354,24 @@ export default function Home() {
       ? previousEntry.questionJa
       : previousEntry.questionKo
     : "";
+
+  const ResendBlock = (
+    <div className="w-full max-w-xl flex flex-col items-center gap-3 py-4">
+      <p className="text-sm text-danger text-center">{error}</p>
+      <button
+        onClick={resend}
+        className="w-full py-4 rounded-2xl bg-accent text-bg font-semibold text-lg tracking-wide"
+      >
+        {t.resend}
+      </button>
+      <button
+        onClick={discardAndRerecord}
+        className="text-xs text-text-dim underline hover:text-accent transition-colors"
+      >
+        {t.rerecordInstead}
+      </button>
+    </div>
+  );
 
   return (
     <main className="min-h-screen flex flex-col items-center gap-5 px-4 py-6">
@@ -288,14 +402,18 @@ export default function Home() {
             />
           )}
 
-          <RecordButton
-            step={step}
-            recordingSeconds={recordingSeconds}
-            statusText={statusText}
-            actionLabel={t.redoAction}
-            onClick={step === "recording" ? stopRecording : startRecording}
-            disabled={busy}
-          />
+          {showResendUI ? (
+            ResendBlock
+          ) : (
+            <RecordButton
+              step={step}
+              recordingSeconds={recordingSeconds}
+              statusText={statusText}
+              actionLabel={micRetryActive ? t.micRetry : t.redoAction}
+              onClick={step === "recording" ? () => stopRecording() : startRecording}
+              disabled={busy}
+            />
+          )}
         </>
       ) : initialLoading ? (
         <div className="w-full max-w-xl flex flex-col gap-5 animate-pulse">
@@ -312,14 +430,18 @@ export default function Home() {
 
           <QuestionCard question={currentQuestion} />
 
-          <RecordButton
-            step={step}
-            recordingSeconds={recordingSeconds}
-            statusText={statusText}
-            actionLabel={t.recordAction}
-            onClick={step === "recording" ? stopRecording : startRecording}
-            disabled={(!currentQuestion && step === "idle") || busy}
-          />
+          {showResendUI ? (
+            ResendBlock
+          ) : (
+            <RecordButton
+              step={step}
+              recordingSeconds={recordingSeconds}
+              statusText={statusText}
+              actionLabel={micRetryActive ? t.micRetry : t.recordAction}
+              onClick={step === "recording" ? () => stopRecording() : startRecording}
+              disabled={(!currentQuestion && step === "idle") || busy}
+            />
+          )}
 
           <QuestionActionsRow
             onPrevious={handlePrevious}
