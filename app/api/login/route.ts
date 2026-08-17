@@ -18,7 +18,9 @@ export async function POST(req: NextRequest) {
   res.cookies.set(USER_COOKIE, userId, {
     httpOnly: true,
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 365,
+    // No maxAge on purpose: session cookie, cleared when the browser is fully
+    // closed. Prevents the next person on a shared device from silently
+    // continuing as the previous person's number.
     path: "/",
   });
   return res;
