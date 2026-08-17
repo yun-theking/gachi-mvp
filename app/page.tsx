@@ -45,6 +45,7 @@ export default function Home() {
   const [stagePosition, setStagePosition] = useState<StagePos | null>(null);
   const [showJapanese, setShowJapanese] = useState(false);
   const [progress, setProgress] = useState<Progress>({ totalAnswered: 0, totalQuestions: 0 });
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const [lastTranscript, setLastTranscript] = useState("");
   const [lastChapter, setLastChapter] = useState("");
@@ -66,6 +67,7 @@ export default function Home() {
     setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
     setStagePosition(data.stagePosition);
     setProgress(data.progress);
+    setInitialLoading(false);
   }, []);
 
   useEffect(() => {
@@ -289,6 +291,13 @@ export default function Home() {
             disabled={busy}
           />
         </>
+      ) : initialLoading ? (
+        <div className="w-full max-w-xl flex flex-col gap-5 animate-pulse">
+          <div className="h-4 w-40 bg-surface2 rounded" />
+          <div className="h-1.5 w-full bg-surface2 rounded-full" />
+          <div className="h-36 w-full bg-surface2 rounded-2xl" />
+          <div className="h-28 w-28 bg-surface2 rounded-full self-center" />
+        </div>
       ) : (
         <>
           <StageProgress currentStageId={currentStageId} stagePosition={stagePosition} />
