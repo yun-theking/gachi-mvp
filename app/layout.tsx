@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import UserNav from "@/components/UserNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,13 +23,16 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased bg-bg text-text font-sans min-h-screen">
-        <nav className="w-full max-w-xl mx-auto flex items-center justify-center gap-8 pt-8 text-xs tracking-widest uppercase text-text-muted">
-          <Link href="/" className="hover:text-gold transition-colors">
-            인터뷰
-          </Link>
-          <Link href="/archive" className="hover:text-gold transition-colors">
-            내 회고록
-          </Link>
+        <nav className="w-full max-w-xl mx-auto flex items-center justify-between pt-8 text-xs tracking-widest uppercase text-text-muted">
+          <div className="flex items-center gap-8">
+            <Link href="/" className="hover:text-gold transition-colors">
+              인터뷰
+            </Link>
+            <Link href="/archive" className="hover:text-gold transition-colors">
+              내 회고록
+            </Link>
+          </div>
+          <UserNav />
         </nav>
         {children}
       </body>

@@ -1,9 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { pickNextQuestion, getProgressSummary } from "@/lib/questions";
+import { USER_COOKIE } from "@/lib/auth";
 
-export async function GET() {
-  const question = await pickNextQuestion();
-  const progress = await getProgressSummary();
+export async function GET(req: NextRequest) {
+  const userId = req.cookies.get(USER_COOKIE)?.value;
+  if (!userId) {
+    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+  }
+
+  const question = await pickNextQuestion(userId);
+  const progress = await getProgressSummary(userId);
 
   if (!question) {
     return NextResponse.json({ done: true, nextQuestion: null, progress });

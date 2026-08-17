@@ -56,6 +56,7 @@ async function createSchema(db: Client) {
 
     CREATE TABLE IF NOT EXISTS entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL DEFAULT '0',
       question_id INTEGER REFERENCES questions(id),
       life_stage_id INTEGER NOT NULL,
       question_ko TEXT NOT NULL,
@@ -63,7 +64,22 @@ async function createSchema(db: Client) {
       chapter TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
+}
+
+/** entries table existed before user_id was introduced — add the column on old DBs
+ * (both the local file and the already-deployed Turso DB) instead of recreating. */
+async function migrateSchema(db: Client) {
+  const info = await db.execute("PRAGMA table_info(entries)");
+  const hasUserId = info.rows.some((r) => (r as unknown as { name: string }).name === "user_id");
+  if (!hasUserId) {
+    await db.execute("ALTER TABLE entries ADD COLUMN user_id TEXT NOT NULL DEFAULT '0'");
+  }
 }
 
 async function seedQuestions(db: Client) {
@@ -103,6 +119,7 @@ export async function getDb(): Promise<Client> {
   if (!global.__gachiDbReady) {
     global.__gachiDbReady = (async () => {
       await createSchema(global.__gachiDb!);
+      await migrateSchema(global.__gachiDb!);
       await seedQuestions(global.__gachiDb!);
     })();
   }

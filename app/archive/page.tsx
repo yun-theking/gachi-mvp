@@ -1,22 +1,23 @@
-import { getAllEntries, getProgressSummary, TOTAL_STAGES } from "@/lib/questions";
+import { cookies } from "next/headers";
+import { getAllEntries, getProgressSummary, TOTAL_STAGES, STAGE_NAMES } from "@/lib/questions";
+import { USER_COOKIE } from "@/lib/auth";
 import ChapterPanel from "@/components/ChapterPanel";
 
-const STAGE_NAMES: Record<number, string> = {
-  1: "유년기·성장배경",
-  2: "학창시절·청년기",
-  3: "사회초년·입사/창업초기",
-  4: "성장기 커리어·도전과 실패",
-  5: "전성기·리더십과 결단",
-  6: "위기와 시련·극복",
-  7: "인간관계·은사와 동료",
-  8: "가정·결혼과 사생활",
-  9: "가치관·인생철학",
-  10: "은퇴 이후·후대에 남기는 말",
-};
-
 export default async function ArchivePage() {
-  const entries = await getAllEntries();
-  const progress = await getProgressSummary();
+  const store = await cookies();
+  const userId = store.get(USER_COOKIE)?.value;
+
+  // middleware already guarantees this, but keep the page safe on its own too
+  if (!userId) {
+    return (
+      <main className="min-h-screen flex items-center justify-center px-4">
+        <p className="text-text-dim text-sm">로그인이 필요합니다.</p>
+      </main>
+    );
+  }
+
+  const entries = await getAllEntries(userId);
+  const progress = await getProgressSummary(userId);
   const stagesStarted = new Set(entries.map((e) => e.life_stage_id)).size;
 
   const byStage = new Map<number, typeof entries>();
