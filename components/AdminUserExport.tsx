@@ -14,7 +14,7 @@ export default function AdminUserExport() {
     const res = await fetch(`/api/admin/export?userId=${encodeURIComponent(id)}`);
     if (!res.ok) {
       const data = await res.json().catch(() => null);
-      setError(data?.error || "다운로드에 실패했습니다.");
+      setError(data?.error || "Download failed.");
       return;
     }
 
@@ -29,7 +29,7 @@ export default function AdminUserExport() {
 
   return (
     <div className="w-full max-w-xs flex flex-col gap-3">
-      <p className="text-xs text-text-dim text-center">특정 사용자 번호만 다운로드</p>
+      <p className="text-xs text-text-dim text-center">Download a single user only</p>
       <div className="flex gap-2">
         <input
           type="text"
@@ -37,7 +37,7 @@ export default function AdminUserExport() {
           value={userId}
           onChange={(e) => setUserId(e.target.value.replace(/[^0-9]/g, ""))}
           onKeyDown={(e) => e.key === "Enter" && download()}
-          placeholder="사용자 번호"
+          placeholder="User number"
           className="flex-1 text-center py-3 rounded-2xl bg-surface border border-border text-text placeholder:text-text-muted focus:outline-none focus:border-accent"
         />
         <button
@@ -45,7 +45,7 @@ export default function AdminUserExport() {
           disabled={userId.length === 0}
           className="py-3 px-5 rounded-2xl bg-surface2 border border-border text-text font-medium disabled:opacity-40 transition-opacity"
         >
-          다운로드
+          Download
         </button>
       </div>
       {error && <p className="text-sm text-danger text-center">{error}</p>}

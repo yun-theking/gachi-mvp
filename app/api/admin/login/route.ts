@@ -7,13 +7,13 @@ export async function POST(req: NextRequest) {
 
   if (!expected) {
     return NextResponse.json(
-      { error: "서버에 ADMIN_PASSWORD가 설정되어 있지 않습니다." },
+      { error: "ADMIN_PASSWORD is not set on the server." },
       { status: 500 }
     );
   }
 
   if (password !== expected) {
-    return NextResponse.json({ error: "비밀번호가 올바르지 않습니다." }, { status: 401 });
+    return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
   }
 
   const res = NextResponse.json({ ok: true });

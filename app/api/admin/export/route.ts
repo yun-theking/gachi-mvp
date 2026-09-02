@@ -58,7 +58,7 @@ function sheetNameFor(userId: string): string {
 export async function GET(req: NextRequest) {
   const isAdmin = req.cookies.get(ADMIN_COOKIE)?.value === "1";
   if (!isAdmin) {
-    return NextResponse.json({ error: "관리자 인증이 필요합니다." }, { status: 401 });
+    return NextResponse.json({ error: "Admin authentication required." }, { status: 401 });
   }
 
   const userId = req.nextUrl.searchParams.get("userId")?.trim();
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
 
     if (rows.length === 0) {
       return NextResponse.json(
-        { error: `사용자 번호 '${userId}'의 기록이 없습니다.` },
+        { error: `No records found for user '${userId}'.` },
         { status: 404 }
       );
     }

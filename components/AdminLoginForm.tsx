@@ -17,10 +17,10 @@ export default function AdminLoginForm() {
         body: JSON.stringify({ password }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "인증 실패");
+      if (!res.ok) throw new Error(data.error || "Authentication failed");
       window.location.reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+      setError(err instanceof Error ? err.message : "An unknown error occurred.");
       setLoading(false);
     }
   };
@@ -33,7 +33,7 @@ export default function AdminLoginForm() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
-        placeholder="관리자 비밀번호"
+        placeholder="Admin password"
         className="w-full text-center text-lg py-4 rounded-2xl bg-surface border border-border text-text placeholder:text-text-muted focus:outline-none focus:border-accent"
       />
       {error && <p className="text-sm text-danger text-center">{error}</p>}
@@ -42,7 +42,7 @@ export default function AdminLoginForm() {
         disabled={loading || password.length === 0}
         className="w-full py-4 rounded-2xl bg-accent text-bg font-semibold tracking-wide disabled:opacity-40 transition-opacity"
       >
-        {loading ? "확인 중…" : "확인"}
+        {loading ? "Checking…" : "Confirm"}
       </button>
     </div>
   );
