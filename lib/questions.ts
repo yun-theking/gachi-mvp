@@ -232,13 +232,3 @@ export async function registerUser(userId: string, language: Lang) {
     args: [userId, language],
   });
 }
-
-export async function getUserLanguage(userId: string): Promise<Lang | null> {
-  const db = await getDb();
-  const result = await db.execute({
-    sql: "SELECT language FROM users WHERE id = ?",
-    args: [userId],
-  });
-  const value = result.rows[0]?.language as string | undefined;
-  return value === "ko" || value === "ja" ? value : null;
-}

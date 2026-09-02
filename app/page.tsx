@@ -17,11 +17,6 @@ interface HistoryEntry {
   content: string;
 }
 
-interface Progress {
-  totalAnswered: number;
-  totalQuestions: number;
-}
-
 interface StagePos {
   position: number;
   total: number;
@@ -52,7 +47,6 @@ export default function Home() {
   const [currentQuestion, setCurrentQuestion] = useState<BankQuestion | null>(null);
   const [currentStageId, setCurrentStageId] = useState<number | null>(1);
   const [stagePosition, setStagePosition] = useState<StagePos | null>(null);
-  const [progress, setProgress] = useState<Progress>({ totalAnswered: 0, totalQuestions: 0 });
   const [initialLoading, setInitialLoading] = useState(true);
 
   const [lastTranscript, setLastTranscript] = useState("");
@@ -79,7 +73,6 @@ export default function Home() {
     setCurrentQuestion(data.nextQuestion);
     setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
     setStagePosition(data.stagePosition);
-    setProgress(data.progress);
     setInitialLoading(false);
   }, []);
 
@@ -200,7 +193,6 @@ export default function Home() {
     setCurrentQuestion(data.nextQuestion);
     setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
     setStagePosition(data.stagePosition);
-    setProgress(data.progress);
 
     setHistory((prev) => [
       ...prev,
@@ -319,7 +311,6 @@ export default function Home() {
     setCurrentQuestion(data.nextQuestion);
     setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
     setStagePosition(data.stagePosition);
-    setProgress(data.progress);
     setNoteText(t.skippedNote);
   };
 
