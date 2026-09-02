@@ -25,7 +25,7 @@ function LoginForm() {
   const t = getDict(lang);
 
   const submit = async () => {
-    if (!/^[0-9]{1,10}$/.test(userId)) {
+    if (!/^[0-9]{4}$/.test(userId)) {
       setError(t.loginErrorFormat);
       return;
     }
@@ -92,7 +92,7 @@ function LoginForm() {
           onChange={(e) => setUserId(e.target.value.replace(/[^0-9]/g, ""))}
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder={t.loginPlaceholder}
-          maxLength={10}
+          maxLength={4}
           className="w-full text-center text-3xl tracking-widest py-5 rounded-2xl bg-surface border border-border text-text placeholder:text-text-muted focus:outline-none focus:border-accent"
         />
 

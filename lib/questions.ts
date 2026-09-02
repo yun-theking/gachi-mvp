@@ -232,3 +232,86 @@ export async function registerUser(userId: string, language: Lang) {
     args: [userId, language],
   });
 }
+
+export async function userExists(userId: string): Promise<boolean> {
+  const db = await getDb();
+  const result = await db.execute({ sql: "SELECT 1 FROM users WHERE id = ?", args: [userId] });
+  return result.rows.length > 0;
+}
+
+const RATE_LIMIT_WINDOW_MINUTES = 10;
+const RATE_LIMIT_MAX_ATTEMPTS = 20;
+
+/** Beta login has no separate password, so this throttles login POSTs per IP
+ * instead — slows down scanning through the 4-digit number space to find
+ * (and walk straight into) someone else's account. Sliding-ish fixed window:
+ * count resets once RATE_LIMIT_WINDOW_MINUTES has passed since it started. */
+export async function checkIpRateLimit(
+  ip: string
+): Promise<{ limited: boolean; retryAfterSeconds?: number }> {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: "SELECT count, window_start FROM login_rate_limit WHERE ip = ?",
+    args: [ip],
+  });
+  const row = result.rows[0] as unknown as { count: number; window_start: string } | undefined;
+  if (!row) return { limited: false };
+
+  const windowStartMs = new Date(row.window_start + "Z").getTime();
+  const elapsedMs = Date.now() - windowStartMs;
+  const windowMs = RATE_LIMIT_WINDOW_MINUTES * 60 * 1000;
+
+  if (elapsedMs >= windowMs) return { limited: false }; // window expired, will reset on next record
+
+  if (Number(row.count) >= RATE_LIMIT_MAX_ATTEMPTS) {
+    return { limited: true, retryAfterSeconds: Math.ceil((windowMs - elapsedMs) / 1000) };
+  }
+  return { limited: false };
+}
+
+/** Records one login POST from this IP, starting a fresh window if the
+ * previous one expired. Call after checkIpRateLimit() passes. */
+export async function recordIpLoginAttempt(ip: string) {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: "SELECT window_start FROM login_rate_limit WHERE ip = ?",
+    args: [ip],
+  });
+  const row = result.rows[0] as unknown as { window_start: string } | undefined;
+  const windowMs = RATE_LIMIT_WINDOW_MINUTES * 60 * 1000;
+  const expired = row && Date.now() - new Date(row.window_start + "Z").getTime() >= windowMs;
+
+  if (!row || expired) {
+    await db.execute({
+      sql: `
+        INSERT INTO login_rate_limit (ip, count, window_start) VALUES (?, 1, datetime('now'))
+        ON CONFLICT(ip) DO UPDATE SET count = 1, window_start = datetime('now')
+      `,
+      args: [ip],
+    });
+  } else {
+    await db.execute({
+      sql: "UPDATE login_rate_limit SET count = count + 1 WHERE ip = ?",
+      args: [ip],
+    });
+  }
+}
+
+/** Admin-only: moves an account from oldId to newId, carrying over every
+ * table that references the user, for when someone forgets their number.
+ * Requires the admin to already know the old number (e.g. from a support
+ * conversation) — this is not a self-service "forgot number" flow. */
+export async function renameUser(oldId: string, newId: string) {
+  const db = await getDb();
+  await db.batch(
+    [
+      { sql: "UPDATE users SET id = ? WHERE id = ?", args: [newId, oldId] },
+      { sql: "UPDATE entries SET user_id = ? WHERE user_id = ?", args: [newId, oldId] },
+      {
+        sql: "UPDATE skipped_questions SET user_id = ? WHERE user_id = ?",
+        args: [newId, oldId],
+      },
+    ],
+    "write"
+  );
+}

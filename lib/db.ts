@@ -72,6 +72,15 @@ async function createSchema(db: Client) {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Beta login has no separate password: the 4-digit number itself is the
+    -- credential. This throttles how fast one IP can try different numbers,
+    -- so scanning the full 0000-9999 space to find live accounts is slow.
+    CREATE TABLE IF NOT EXISTS login_rate_limit (
+      ip TEXT PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 0,
+      window_start TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS skipped_questions (
       user_id TEXT NOT NULL,
       question_id INTEGER NOT NULL,
@@ -122,6 +131,14 @@ async function migrateSchema(db: Client) {
   if (!hasLanguage) {
     await db.execute("ALTER TABLE users ADD COLUMN language TEXT NOT NULL DEFAULT 'ko'");
   }
+
+  await db.execute(
+    `CREATE TABLE IF NOT EXISTS login_rate_limit (
+       ip TEXT PRIMARY KEY,
+       count INTEGER NOT NULL DEFAULT 0,
+       window_start TEXT NOT NULL DEFAULT (datetime('now'))
+     )`
+  );
 }
 
 async function seedQuestions(db: Client) {

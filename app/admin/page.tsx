@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { ADMIN_COOKIE } from "@/lib/auth";
 import AdminLoginForm from "@/components/AdminLoginForm";
 import AdminUserExport from "@/components/AdminUserExport";
+import AdminRenameUser from "@/components/AdminRenameUser";
 
 export default async function AdminPage() {
   const store = await cookies();
@@ -29,6 +30,8 @@ export default async function AdminPage() {
           </p>
           <div className="w-full h-px bg-border" />
           <AdminUserExport />
+          <div className="w-full h-px bg-border" />
+          <AdminRenameUser />
         </div>
       ) : (
         <AdminLoginForm />
