@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { ADMIN_COOKIE } from "@/lib/auth";
 import AdminLoginForm from "@/components/AdminLoginForm";
+import AdminUserExport from "@/components/AdminUserExport";
 
 export default async function AdminPage() {
   const store = await cookies();
@@ -16,12 +17,19 @@ export default async function AdminPage() {
       </header>
 
       {isAdmin ? (
-        <a
-          href="/api/admin/export"
-          className="py-4 px-8 rounded-2xl bg-accent text-bg font-semibold tracking-wide text-center"
-        >
-          전체 데이터 엑셀 다운로드
-        </a>
+        <div className="w-full max-w-xs flex flex-col items-center gap-6">
+          <a
+            href="/api/admin/export"
+            className="w-full py-4 px-8 rounded-2xl bg-accent text-bg font-semibold tracking-wide text-center"
+          >
+            전체 데이터 엑셀 다운로드
+          </a>
+          <p className="text-xs text-text-muted text-center">
+            전체 다운로드는 사용자별로 탭이 나뉘어 있습니다.
+          </p>
+          <div className="w-full h-px bg-border" />
+          <AdminUserExport />
+        </div>
       ) : (
         <AdminLoginForm />
       )}
