@@ -9,6 +9,10 @@
 
 html {
   scroll-behavior: smooth;
+  /* Elderly-friendly baseline: relative (%) rather than a fixed px so it still
+   * scales with whatever text-size the person's own browser/OS is set to,
+   * instead of overriding it. ~16px browser default -> ~18px effective. */
+  font-size: 112.5%;
 }
 
 body {

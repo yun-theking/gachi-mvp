@@ -29,7 +29,7 @@ export default function RecordButton({
 
   return (
     <div className="w-full max-w-xl flex flex-col items-center gap-4 py-4">
-      <p className="text-sm text-center leading-relaxed text-text-dim">
+      <p className="text-base text-center leading-relaxed text-text-dim">
         {step === "error" ? (
           <span className="text-danger">{statusText}</span>
         ) : step === "idle" || step === "done" ? (
@@ -62,7 +62,7 @@ export default function RecordButton({
       <button
         onClick={onClick}
         disabled={disabled || busy}
-        className={`w-28 h-28 rounded-full flex items-center justify-center shadow-lg transition-all duration-150
+        className={`w-32 h-32 rounded-full flex items-center justify-center shadow-lg transition-all duration-150
           ${
             recording
               ? "bg-gradient-to-br from-danger to-[#8f2e1c] recording-pulse"
@@ -72,20 +72,20 @@ export default function RecordButton({
           }`}
       >
         {recording ? (
-          <span className="w-6 h-6 rounded-sm bg-white/90" />
+          <span className="w-7 h-7 rounded-sm bg-white/90" />
         ) : busy ? (
-          <span className="text-3xl text-text-dim animate-spin">⏳</span>
+          <span className="text-4xl text-text-dim animate-spin">⏳</span>
         ) : (
-          <IconMic className="w-9 h-9 text-white" />
+          <IconMic className="w-10 h-10 text-white" />
         )}
       </button>
 
-      <p className="font-bold text-text text-lg">
+      <p className="font-bold text-text text-xl">
         {recording ? t.recordStop : busy ? statusText : actionLabel}
       </p>
 
       <div
-        className={`font-mono text-xl font-light tracking-wider text-accent-dark transition-opacity duration-300 ${
+        className={`font-mono text-2xl font-light tracking-wider text-accent-dark transition-opacity duration-300 ${
           recording ? "opacity-100" : "opacity-0"
         }`}
       >

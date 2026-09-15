@@ -24,7 +24,7 @@ export default function QuestionCard({ question }: Props) {
         <p className="font-serif text-accent-dark font-semibold text-lg mb-2">
           {t.allDoneTitle}
         </p>
-        <p className="text-text-dim text-sm">{t.allDoneBody}</p>
+        <p className="text-text-dim text-base">{t.allDoneBody}</p>
       </div>
     );
   }
@@ -34,8 +34,8 @@ export default function QuestionCard({ question }: Props) {
 
   return (
     <div className="w-full max-w-xl bg-surface border border-border rounded-2xl p-6 flex flex-col gap-3">
-      <span className="text-xs font-semibold text-accent-dark">{stageLabel}</span>
-      <p className="font-bold text-text text-xl leading-relaxed">{questionText}</p>
+      <span className="text-sm font-semibold text-accent-dark">{stageLabel}</span>
+      <p className="font-bold text-text text-2xl leading-relaxed">{questionText}</p>
     </div>
   );
 }

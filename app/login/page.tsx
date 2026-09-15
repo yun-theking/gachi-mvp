@@ -51,12 +51,12 @@ function LoginForm() {
     <main className="min-h-screen flex flex-col items-center justify-center gap-8 py-12 px-4">
       <header className="text-center mb-2 flex flex-col items-center gap-3">
         <Image src="/logo.png" alt="Gachi" width={161} height={68} priority />
-        <p className="text-sm text-text-dim">{t.loginSubtitle}</p>
+        <p className="text-base text-text-dim">{t.loginSubtitle}</p>
       </header>
 
       <div className="w-full max-w-xs flex flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-text-muted text-center">{t.loginLanguageLabel}</p>
+          <p className="text-sm text-text-muted text-center">{t.loginLanguageLabel}</p>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -96,7 +96,7 @@ function LoginForm() {
           className="w-full text-center text-3xl tracking-widest py-5 rounded-2xl bg-surface border border-border text-text placeholder:text-text-muted focus:outline-none focus:border-accent"
         />
 
-        {error && <p className="text-sm text-danger text-center">{error}</p>}
+        {error && <p className="text-base text-danger text-center">{error}</p>}
 
         <button
           onClick={submit}
@@ -106,7 +106,7 @@ function LoginForm() {
           {loading ? t.loginButtonLoading : t.loginButton}
         </button>
 
-        <p className="text-xs text-text-muted text-center leading-relaxed">
+        <p className="text-sm text-text-muted text-center leading-relaxed">
           {t.loginHint1}
           <br />
           {t.loginHint2}

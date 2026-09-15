@@ -15,7 +15,7 @@ export default async function ArchivePage() {
   if (!userId) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
-        <p className="text-text-dim text-sm">Login required.</p>
+        <p className="text-text-dim text-base">Login required.</p>
       </main>
     );
   }
@@ -35,13 +35,13 @@ export default async function ArchivePage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center gap-8 py-8 px-4">
-      <p className="text-xs text-text-dim tracking-widest uppercase text-center">
+      <p className="text-sm text-text-dim tracking-widest uppercase text-center">
         {t.archiveProgress(progress.totalAnswered, progress.totalQuestions, stagesStarted, TOTAL_STAGES)}
       </p>
 
       {entries.length === 0 ? (
         <div className="w-full max-w-xl bg-surface border border-border rounded-2xl p-10 text-center">
-          <p className="text-text-dim text-sm">{t.archiveEmpty}</p>
+          <p className="text-text-dim text-base">{t.archiveEmpty}</p>
         </div>
       ) : (
         <div className="w-full max-w-xl flex flex-col gap-10">

@@ -54,28 +54,28 @@ export default function TopBar({ userId }: { userId: string | null }) {
               onClick={openList}
               aria-label={t.questionListButton}
               title={t.questionListButton}
-              className="w-9 h-9 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
+              className="w-11 h-11 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
             >
-              <IconList className="w-5 h-5" />
+              <IconList className="w-6 h-6" />
             </button>
           ) : (
             <button
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="menu"
-              className="w-9 h-9 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
+              className="w-11 h-11 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
             >
-              <IconMenu className="w-5 h-5" />
+              <IconMenu className="w-6 h-6" />
             </button>
           )}
           {menuOpen && !isInterview && (
             <div className="absolute left-0 top-11 w-64 bg-surface border border-border rounded-xl p-4 shadow-lg">
               <Image src="/logo.png" alt="Gachi" width={92} height={39} className="mb-2" />
-              <p className="text-xs text-text-dim leading-relaxed">{t.appTagline}</p>
+              <p className="text-sm text-text-dim leading-relaxed">{t.appTagline}</p>
             </div>
           )}
         </div>
 
-        <h1 className="flex items-center gap-2 font-serif text-base font-bold text-text tracking-wide">
+        <h1 className="flex items-center gap-2 font-serif text-lg font-bold text-text tracking-wide">
           {isInterview && <Image src="/logo.png" alt="Gachi" width={64} height={27} />}
           <span>{title}</span>
         </h1>
@@ -84,18 +84,18 @@ export default function TopBar({ userId }: { userId: string | null }) {
           <button
             onClick={() => setProfileOpen((v) => !v)}
             aria-label="profile"
-            className="w-9 h-9 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
+            className="w-11 h-11 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
           >
-            <IconUser className="w-5 h-5" />
+            <IconUser className="w-6 h-6" />
           </button>
           {profileOpen && userId && (
             <div className="absolute right-0 top-11 w-48 bg-surface border border-border rounded-xl p-3 shadow-lg flex flex-col gap-2">
-              <p className="text-xs text-text-dim px-1">
+              <p className="text-sm text-text-dim px-1">
                 {t.myNumber} <span className="text-text font-medium">{userId}</span>
               </p>
               <button
                 onClick={logout}
-                className="text-xs text-left px-1 py-1.5 rounded-lg hover:bg-surface2 text-accent-dark transition-colors"
+                className="text-sm text-left px-1 py-1.5 rounded-lg hover:bg-surface2 text-accent-dark transition-colors"
               >
                 {t.switchNumber}
               </button>

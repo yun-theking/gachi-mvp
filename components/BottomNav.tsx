@@ -24,11 +24,11 @@ export default function BottomNav() {
             <Link
               key={href}
               href={href}
-              className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[0.65rem] tracking-wide transition-colors ${
+              className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs tracking-wide transition-colors ${
                 active ? "text-accent" : "text-text-muted"
               }`}
             >
-              <Icon className="w-5 h-5" />
+              <Icon className="w-6 h-6" />
               <span className={active ? "font-semibold" : ""}>{label}</span>
             </Link>
           );

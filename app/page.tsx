@@ -384,7 +384,7 @@ export default function Home() {
 
   const ResendBlock = (
     <div className="w-full max-w-xl flex flex-col items-center gap-3 py-4">
-      <p className="text-sm text-danger text-center">{error}</p>
+      <p className="text-base text-danger text-center">{error}</p>
       <button
         onClick={resend}
         className="w-full py-4 rounded-2xl bg-accent text-bg font-semibold text-lg tracking-wide"
@@ -393,7 +393,7 @@ export default function Home() {
       </button>
       <button
         onClick={discardAndRerecord}
-        className="text-xs text-text-dim underline hover:text-accent transition-colors"
+        className="text-sm text-text-dim underline hover:text-accent transition-colors"
       >
         {t.rerecordInstead}
       </button>
@@ -407,14 +407,14 @@ export default function Home() {
           <div className="w-full max-w-xl flex items-center gap-2">
             <button
               onClick={cancelRedo}
-              className="flex items-center gap-1 text-xs text-text-dim hover:text-accent transition-colors"
+              className="flex items-center gap-1 text-sm text-text-dim hover:text-accent transition-colors"
             >
-              <IconChevronLeft className="w-4 h-4" />
+              <IconChevronLeft className="w-5 h-5" />
               {t.backToCurrent}
             </button>
           </div>
 
-          <p className="w-full max-w-xl text-xs text-accent-dark font-semibold">
+          <p className="w-full max-w-xl text-sm text-accent-dark font-semibold">
             {t.redoHeading}
           </p>
 
@@ -453,7 +453,7 @@ export default function Home() {
         <>
           <StageProgress currentStageId={currentStageId} stagePosition={stagePosition} />
 
-          {noteText && <p className="w-full max-w-xl text-xs text-accent">{noteText}</p>}
+          {noteText && <p className="w-full max-w-xl text-sm text-accent font-medium">{noteText}</p>}
 
           <QuestionCard question={currentQuestion} />
 
