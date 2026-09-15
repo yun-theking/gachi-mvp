@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { getDb } from "@/lib/db";
 import { ADMIN_COOKIE } from "@/lib/auth";
-import { STAGE_NAMES } from "@/lib/questions";
 
 interface EntryExportRow {
   user_id: string;
@@ -15,15 +14,36 @@ interface EntryExportRow {
   created_at: string;
 }
 
+/** English labels for the life-stage column. Kept local to the export route
+ * (rather than added to STAGE_NAMES) since the in-app STAGE_NAMES map only
+ * covers the languages the product UI itself supports (ko/ja); this export
+ * is admin-facing and English-based regardless of the user's app language. */
+const STAGE_NAMES_EN: Record<number, string> = {
+  1: "Childhood & Upbringing",
+  2: "School Days & Early Youth",
+  3: "Early Career: First Job / Startup",
+  4: "Growth-Stage Career: Challenges & Failures",
+  5: "Peak Years: Leadership & Decisions",
+  6: "Crisis & Hardship: Overcoming",
+  7: "Relationships: Mentors & Colleagues",
+  8: "Family: Marriage & Personal Life",
+  9: "Values & Life Philosophy",
+  10: "After Retirement: Words for the Next Generation",
+};
+
+function languageLabel(language: string): string {
+  return language === "ja" ? "Japanese" : "Korean";
+}
+
 const EXPORT_COLUMNS = [
-  { header: "사용자 번호", key: "user_id", width: 12 },
-  { header: "언어", key: "language", width: 8 },
-  { header: "생애주기", key: "stage", width: 26 },
-  { header: "질문(한국어)", key: "question_ko", width: 36 },
-  { header: "質問(日本語)", key: "question_ja", width: 36 },
-  { header: "답변(음성 원문)", key: "transcript", width: 50 },
-  { header: "회고록 챕터", key: "chapter", width: 60 },
-  { header: "작성일시", key: "created_at", width: 20 },
+  { header: "User ID", key: "user_id", width: 12 },
+  { header: "Language", key: "language", width: 10 },
+  { header: "Life Stage", key: "stage", width: 40 },
+  { header: "Question (Korean)", key: "question_ko", width: 36 },
+  { header: "Question (Japanese)", key: "question_ja", width: 36 },
+  { header: "Answer (Transcript)", key: "transcript", width: 50 },
+  { header: "Memoir Chapter", key: "chapter", width: 60 },
+  { header: "Created At", key: "created_at", width: 20 },
 ];
 
 function addEntryRows(sheet: ExcelJS.Worksheet, rows: EntryExportRow[]) {
@@ -33,8 +53,8 @@ function addEntryRows(sheet: ExcelJS.Worksheet, rows: EntryExportRow[]) {
   for (const r of rows) {
     sheet.addRow({
       user_id: r.user_id,
-      language: r.language === "ja" ? "日本語" : "한국어",
-      stage: `${r.life_stage_id}. ${STAGE_NAMES.ko[r.life_stage_id] ?? ""}`,
+      language: languageLabel(r.language),
+      stage: `${r.life_stage_id}. ${STAGE_NAMES_EN[r.life_stage_id] ?? ""}`,
       question_ko: r.question_ko,
       question_ja: r.question_ja,
       transcript: r.transcript,
@@ -111,17 +131,17 @@ export async function GET(req: NextRequest) {
 
     // Overview tab first so the admin has a jump-off point before the
     // per-user tabs. Kept minimal — just who's in this export.
-    const overview = workbook.addWorksheet("전체 목록");
+    const overview = workbook.addWorksheet("Overview");
     overview.columns = [
-      { header: "사용자 번호", key: "user_id", width: 14 },
-      { header: "언어", key: "language", width: 8 },
-      { header: "기록 수", key: "count", width: 10 },
+      { header: "User ID", key: "user_id", width: 14 },
+      { header: "Language", key: "language", width: 10 },
+      { header: "Entry Count", key: "count", width: 12 },
     ];
     overview.getRow(1).font = { bold: true };
     for (const [uid, entries] of byUser) {
       overview.addRow({
         user_id: uid,
-        language: entries[0].language === "ja" ? "日本語" : "한국어",
+        language: languageLabel(entries[0].language),
         count: entries.length,
       });
     }
