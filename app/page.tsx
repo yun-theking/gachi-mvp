@@ -9,6 +9,7 @@ import QuestionActionsRow from "@/components/QuestionActionsRow";
 import { IconChevronLeft } from "@/components/icons";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useQuestionSelection } from "@/components/QuestionSelectionProvider";
+import OnboardingModal from "@/components/OnboardingModal";
 
 const MAX_RECORDING_SECONDS = 600; // 10 minutes
 const WARNING_AT_SECONDS = 570; // warn 30s before auto-stop
@@ -402,6 +403,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center gap-5 px-4 py-6">
+      <OnboardingModal />
       {mode === "redo" ? (
         <>
           <div className="w-full max-w-xl flex items-center gap-2">

@@ -94,6 +94,17 @@ export interface Dict {
   navMenuLabel: string;
   navListLabel: string;
   navProfileLabel: string;
+  onboardingSkip: string;
+  onboardingNext: string;
+  onboardingStart: string;
+  onboardingStep1Title: string;
+  onboardingStep1Body: string;
+  onboardingStep2Title: string;
+  onboardingStep2Body: string;
+  onboardingStep3Title: string;
+  onboardingStep3Body: string;
+  onboardingSampleQuestion: string;
+  onboardingSampleChapter: string;
 }
 
 const dict: Record<Lang, Dict> = {
@@ -167,6 +178,17 @@ const dict: Record<Lang, Dict> = {
     navMenuLabel: "메뉴",
     navListLabel: "목록",
     navProfileLabel: "내 정보",
+    onboardingSkip: "건너뛰기",
+    onboardingNext: "다음",
+    onboardingStart: "시작하기",
+    onboardingStep1Title: "가치에 오신 걸 환영해요",
+    onboardingStep1Body: "목소리로 답하기만 하면, 살아오신 이야기가 자동으로 나만의 회고록이 되는 앱이에요.",
+    onboardingStep2Title: "질문에 편하게 답해보세요",
+    onboardingStep2Body: "화면의 질문을 보고 아래 마이크 버튼을 눌러 이야기해주세요. 어려운 질문은 건너뛰거나, 원하는 질문을 직접 골라 답할 수도 있어요.",
+    onboardingStep3Title: "이야기가 회고록이 돼요",
+    onboardingStep3Body: "답변하신 내용은 자동으로 정리되어 “내 회고록”에 차곡차곡 쌓여요. 언제든 다시 읽어보실 수 있어요.",
+    onboardingSampleQuestion: "가장 기억에 남는 어린 시절 친구는 누구인가요?",
+    onboardingSampleChapter: "그 시절, 나는...",
   },
   ja: {
     appName: "가치",
@@ -238,6 +260,17 @@ const dict: Record<Lang, Dict> = {
     navMenuLabel: "メニュー",
     navListLabel: "リスト",
     navProfileLabel: "マイページ",
+    onboardingSkip: "スキップ",
+    onboardingNext: "次へ",
+    onboardingStart: "はじめる",
+    onboardingStep1Title: "가치へようこそ",
+    onboardingStep1Body: "声で答えるだけで、歩んでこられた人生の物語が自動であなただけの回顧録になるアプリです。",
+    onboardingStep2Title: "質問に気軽に答えてみましょう",
+    onboardingStep2Body: "画面の質問を見て、下のマイクボタンを押してお話しください。難しい質問はスキップしたり、好きな質問を選んで答えることもできます。",
+    onboardingStep3Title: "お話が回顧録になります",
+    onboardingStep3Body: "回答された内容は自動でまとめられ、「マイ回顧録」に少しずつ積み重なります。いつでも読み返せます。",
+    onboardingSampleQuestion: "一番印象に残っている幼なじみは誰ですか？",
+    onboardingSampleChapter: "あの頃、私は...",
   },
 };
 
