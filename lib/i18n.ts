@@ -79,6 +79,13 @@ export interface Dict {
   archiveProgress: (answered: number, total: number, started: number, stages: number) => string;
   settingsTitle: string;
   settingsBody: string;
+  questionListButton: string;
+  questionListTitle: string;
+  questionListSubtitle: string;
+  questionListAnsweredBadge: string;
+  questionListProgress: (answered: number, total: number) => string;
+  questionListClose: string;
+  questionSelectedNote: string;
 }
 
 const dict: Record<Lang, Dict> = {
@@ -136,6 +143,14 @@ const dict: Record<Lang, Dict> = {
       `${answered}/${total} 질문 답변 완료 · ${started}/${stages} 생애주기 진행중`,
     settingsTitle: "설정",
     settingsBody: "준비 중이에요.",
+    questionListButton: "전체 질문 보기",
+    questionListTitle: "전체 질문 목록",
+    questionListSubtitle: "원하는 질문을 골라 바로 답변할 수 있어요",
+    questionListAnsweredBadge: "답변완료",
+    questionListProgress: (answered: number, total: number) =>
+      `${answered}/${total} 답변완료`,
+    questionListClose: "닫기",
+    questionSelectedNote: "선택한 질문으로 이동했어요",
   },
   ja: {
     appName: "가치",
@@ -191,6 +206,14 @@ const dict: Record<Lang, Dict> = {
       `${answered}/${total} 問回答済み · ${started}/${stages} ライフステージ進行中`,
     settingsTitle: "設定",
     settingsBody: "準備中です。",
+    questionListButton: "全質問を見る",
+    questionListTitle: "全質問リスト",
+    questionListSubtitle: "好きな質問を選んですぐに答えられます",
+    questionListAnsweredBadge: "回答済み",
+    questionListProgress: (answered: number, total: number) =>
+      `${answered}/${total} 回答済み`,
+    questionListClose: "閉じる",
+    questionSelectedNote: "選択した質問に移動しました",
   },
 };
 

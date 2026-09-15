@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import AppChrome from "@/components/AppChrome";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { QuestionSelectionProvider } from "@/components/QuestionSelectionProvider";
 import { USER_COOKIE, LANG_COOKIE, DEFAULT_LANG, isValidLang } from "@/lib/auth";
 import "./globals.css";
 
@@ -31,7 +32,9 @@ export default async function RootLayout({
       </head>
       <body className="antialiased bg-bg text-text font-sans min-h-screen">
         <LanguageProvider lang={lang}>
-          <AppChrome userId={userId}>{children}</AppChrome>
+          <QuestionSelectionProvider>
+            <AppChrome userId={userId}>{children}</AppChrome>
+          </QuestionSelectionProvider>
         </LanguageProvider>
       </body>
     </html>

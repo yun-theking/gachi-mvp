@@ -89,6 +89,30 @@ export async function getRemainingQuestions(
   return result.rows as unknown as QuestionRow[];
 }
 
+export interface QuestionWithStatus extends QuestionRow {
+  answered: boolean;
+}
+
+/** All 108 questions, in stage/id order, each flagged with whether this user has
+ * already answered it. Backs the "pick any question" list — unlike
+ * getRemainingQuestions, this intentionally includes answered (and skipped)
+ * questions too, since the picker needs to show and label the full set. */
+export async function getAllQuestionsWithStatus(userId: string): Promise<QuestionWithStatus[]> {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: `
+      SELECT q.*, CASE WHEN e.question_id IS NOT NULL THEN 1 ELSE 0 END as answered
+      FROM questions q
+      LEFT JOIN entries e ON e.question_id = q.id AND e.user_id = ?
+      ORDER BY q.life_stage_id, q.id
+    `,
+    args: [userId],
+  });
+  return (result.rows as unknown as (QuestionRow & { answered: number | boolean })[]).map(
+    (r) => ({ ...r, answered: !!r.answered })
+  );
+}
+
 export async function getAllQuestionsInStage(stageId: number): Promise<QuestionRow[]> {
   const db = await getDb();
   const result = await db.execute({

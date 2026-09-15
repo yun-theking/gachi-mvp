@@ -3,13 +3,16 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
-import { IconMenu, IconUser } from "./icons";
+import { IconMenu, IconUser, IconList } from "./icons";
 import { useLanguage } from "./LanguageProvider";
+import { useQuestionSelection } from "./QuestionSelectionProvider";
+import QuestionListModal from "./QuestionListModal";
 
 export default function TopBar({ userId }: { userId: string | null }) {
   const router = useRouter();
   const pathname = usePathname();
   const { dict: t } = useLanguage();
+  const { openList } = useQuestionSelection();
 
   const isInterview = !pathname.startsWith("/archive") && !pathname.startsWith("/settings");
   const title = pathname.startsWith("/archive")
@@ -46,14 +49,25 @@ export default function TopBar({ userId }: { userId: string | null }) {
     <header className="sticky top-0 z-20 bg-bg/95 backdrop-blur border-b border-border">
       <div className="max-w-xl mx-auto flex items-center justify-between px-4 h-14">
         <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="menu"
-            className="w-9 h-9 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
-          >
-            <IconMenu className="w-5 h-5" />
-          </button>
-          {menuOpen && (
+          {isInterview ? (
+            <button
+              onClick={openList}
+              aria-label={t.questionListButton}
+              title={t.questionListButton}
+              className="w-9 h-9 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
+            >
+              <IconList className="w-5 h-5" />
+            </button>
+          ) : (
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="menu"
+              className="w-9 h-9 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
+            >
+              <IconMenu className="w-5 h-5" />
+            </button>
+          )}
+          {menuOpen && !isInterview && (
             <div className="absolute left-0 top-11 w-64 bg-surface border border-border rounded-xl p-4 shadow-lg">
               <Image src="/logo.png" alt="Gachi" width={92} height={39} className="mb-2" />
               <p className="text-xs text-text-dim leading-relaxed">{t.appTagline}</p>
@@ -89,6 +103,8 @@ export default function TopBar({ userId }: { userId: string | null }) {
           )}
         </div>
       </div>
+
+      {isInterview && <QuestionListModal />}
     </header>
   );
 }

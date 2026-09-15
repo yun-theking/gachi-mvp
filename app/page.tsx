@@ -8,6 +8,7 @@ import StageProgress from "@/components/StageProgress";
 import QuestionActionsRow from "@/components/QuestionActionsRow";
 import { IconChevronLeft } from "@/components/icons";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useQuestionSelection } from "@/components/QuestionSelectionProvider";
 
 const MAX_RECORDING_SECONDS = 600; // 10 minutes
 const WARNING_AT_SECONDS = 570; // warn 30s before auto-stop
@@ -37,6 +38,7 @@ type ErrorKind = "mic" | "network" | "silence" | null;
 
 export default function Home() {
   const { lang, dict: t } = useLanguage();
+  const { pendingSelection, consumeSelection } = useQuestionSelection();
 
   const [step, setStep] = useState<Step>("idle");
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -79,6 +81,40 @@ export default function Home() {
   useEffect(() => {
     loadNextQuestion();
   }, [loadNextQuestion]);
+
+  // Applies a question picked from the "all questions" list. If a recording
+  // was in progress, stop it without transcribing/sending — jumping to a
+  // different question mid-recording means that take is abandoned.
+  useEffect(() => {
+    if (!pendingSelection) return;
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.onstop = null;
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+    }
+    pendingBlobRef.current = null;
+    pendingTextRef.current = null;
+
+    setMode("normal");
+    setPreviousEntry(null);
+    setErrorKind(null);
+    setError("");
+    setLastChapter("");
+    setStep("idle");
+
+    setCurrentQuestion(pendingSelection);
+    setCurrentStageId(pendingSelection.life_stage_id);
+    setStagePosition(pendingSelection.stagePosition);
+    setNoteText(t.questionSelectedNote);
+
+    consumeSelection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSelection]);
 
   const activeQuestionId =
     mode === "redo" ? previousEntry?.questionId : currentQuestion?.id;
