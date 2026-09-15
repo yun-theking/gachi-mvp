@@ -68,7 +68,7 @@ function ArchiveIllustration() {
   );
 }
 
-export default function OnboardingModal() {
+export default function OnboardingModal({ hasAnsweredAny }: { hasAnsweredAny: boolean }) {
   const { dict: t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
@@ -76,6 +76,12 @@ export default function OnboardingModal() {
 
   useEffect(() => {
     setMounted(true);
+
+    // Already has at least one answered question — definitely not this
+    // person's first visit (covers a new browser/device on the same
+    // account too), so skip the tutorial without even checking storage.
+    if (hasAnsweredAny) return;
+
     try {
       if (!window.localStorage.getItem(SEEN_KEY)) {
         setOpen(true);
@@ -84,7 +90,7 @@ export default function OnboardingModal() {
       // localStorage unavailable (e.g. blocked storage) — just skip the
       // tutorial rather than showing it every visit.
     }
-  }, []);
+  }, [hasAnsweredAny]);
 
   useEffect(() => {
     if (!open) return;
@@ -119,7 +125,7 @@ export default function OnboardingModal() {
       <div className="flex justify-end px-4 pt-4">
         <button
           onClick={finish}
-          className="text-sm text-text-dim underline hover:text-accent-dark transition-colors py-2 px-1"
+          className="text-base font-semibold text-text-dim underline hover:text-accent-dark transition-colors py-2.5 px-3 min-h-[44px]"
         >
           {t.onboardingSkip}
         </button>

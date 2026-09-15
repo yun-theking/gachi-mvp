@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import type { Lang } from "@/lib/auth";
 import { getDict } from "@/lib/i18n";
@@ -15,7 +15,6 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [lang, setLang] = useState<Lang>("ko");
   const [userId, setUserId] = useState("");
@@ -39,8 +38,12 @@ function LoginForm() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t.loginErrorGeneric);
-      router.replace(searchParams.get("next") || "/");
-      router.refresh();
+      // A full navigation, not router.replace(), on purpose: the client-side
+      // router cache can otherwise serve an already-cached response for the
+      // destination route from before login, so the freshly-set language
+      // cookie doesn't reliably show up on the very first paint (e.g. the
+      // onboarding tutorial rendering in the wrong language).
+      window.location.href = searchParams.get("next") || "/";
     } catch (err) {
       setError(err instanceof Error ? err.message : t.loginErrorGeneric);
       setLoading(false);

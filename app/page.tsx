@@ -51,6 +51,7 @@ export default function Home() {
   const [currentStageId, setCurrentStageId] = useState<number | null>(1);
   const [stagePosition, setStagePosition] = useState<StagePos | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [hasAnsweredAny, setHasAnsweredAny] = useState(false);
 
   const [lastTranscript, setLastTranscript] = useState("");
   const [lastChapter, setLastChapter] = useState("");
@@ -76,6 +77,7 @@ export default function Home() {
     setCurrentQuestion(data.nextQuestion);
     setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
     setStagePosition(data.stagePosition);
+    setHasAnsweredAny((data.progress?.totalAnswered ?? 0) > 0);
     setInitialLoading(false);
   }, []);
 
@@ -403,7 +405,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center gap-5 px-4 py-6">
-      <OnboardingModal />
+      {!initialLoading && <OnboardingModal hasAnsweredAny={hasAnsweredAny} />}
       {mode === "redo" ? (
         <>
           <div className="w-full max-w-xl flex items-center gap-2">
