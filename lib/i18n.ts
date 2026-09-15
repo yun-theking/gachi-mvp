@@ -91,6 +91,9 @@ export interface Dict {
   fontScaleSmall: string;
   fontScaleMedium: string;
   fontScaleLarge: string;
+  navMenuLabel: string;
+  navListLabel: string;
+  navProfileLabel: string;
 }
 
 const dict: Record<Lang, Dict> = {
@@ -161,6 +164,9 @@ const dict: Record<Lang, Dict> = {
     fontScaleSmall: "소",
     fontScaleMedium: "중",
     fontScaleLarge: "대",
+    navMenuLabel: "메뉴",
+    navListLabel: "목록",
+    navProfileLabel: "내 정보",
   },
   ja: {
     appName: "가치",
@@ -229,6 +235,9 @@ const dict: Record<Lang, Dict> = {
     fontScaleSmall: "小",
     fontScaleMedium: "中",
     fontScaleLarge: "大",
+    navMenuLabel: "メニュー",
+    navListLabel: "リスト",
+    navProfileLabel: "マイページ",
   },
 };
 

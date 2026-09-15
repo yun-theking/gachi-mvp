@@ -47,28 +47,29 @@ export default function TopBar({ userId }: { userId: string | null }) {
 
   return (
     <header className="sticky top-0 z-20 bg-bg/95 backdrop-blur border-b border-border">
-      <div className="max-w-xl mx-auto flex items-center justify-between px-4 h-14">
+      <div className="max-w-xl mx-auto flex items-center justify-between px-3 py-2">
         <div className="relative" ref={menuRef}>
           {isInterview ? (
             <button
               onClick={openList}
               aria-label={t.questionListButton}
-              title={t.questionListButton}
-              className="w-11 h-11 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-text-dim hover:bg-surface2 transition-colors"
             >
               <IconList className="w-6 h-6" />
+              <span className="text-xs font-medium leading-none">{t.navListLabel}</span>
             </button>
           ) : (
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label="menu"
-              className="w-11 h-11 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
+              aria-label={t.navMenuLabel}
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-text-dim hover:bg-surface2 transition-colors"
             >
               <IconMenu className="w-6 h-6" />
+              <span className="text-xs font-medium leading-none">{t.navMenuLabel}</span>
             </button>
           )}
           {menuOpen && !isInterview && (
-            <div className="absolute left-0 top-11 w-64 bg-surface border border-border rounded-xl p-4 shadow-lg">
+            <div className="absolute left-0 top-14 w-64 bg-surface border border-border rounded-xl p-4 shadow-lg">
               <Image src="/logo.png" alt="Gachi" width={92} height={39} className="mb-2" />
               <p className="text-sm text-text-dim leading-relaxed">{t.appTagline}</p>
             </div>
@@ -83,13 +84,14 @@ export default function TopBar({ userId }: { userId: string | null }) {
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setProfileOpen((v) => !v)}
-            aria-label="profile"
-            className="w-11 h-11 flex items-center justify-center rounded-full text-text-dim hover:bg-surface2 transition-colors"
+            aria-label={t.navProfileLabel}
+            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-text-dim hover:bg-surface2 transition-colors"
           >
             <IconUser className="w-6 h-6" />
+            <span className="text-xs font-medium leading-none">{t.navProfileLabel}</span>
           </button>
           {profileOpen && userId && (
-            <div className="absolute right-0 top-11 w-48 bg-surface border border-border rounded-xl p-3 shadow-lg flex flex-col gap-2">
+            <div className="absolute right-0 top-14 w-48 bg-surface border border-border rounded-xl p-3 shadow-lg flex flex-col gap-2">
               <p className="text-sm text-text-dim px-1">
                 {t.myNumber} <span className="text-text font-medium">{userId}</span>
               </p>

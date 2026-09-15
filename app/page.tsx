@@ -393,7 +393,7 @@ export default function Home() {
       </button>
       <button
         onClick={discardAndRerecord}
-        className="text-sm text-text-dim underline hover:text-accent transition-colors"
+        className="text-sm text-text-dim underline hover:text-accent-dark transition-colors"
       >
         {t.rerecordInstead}
       </button>
@@ -407,7 +407,7 @@ export default function Home() {
           <div className="w-full max-w-xl flex items-center gap-2">
             <button
               onClick={cancelRedo}
-              className="flex items-center gap-1 text-sm text-text-dim hover:text-accent transition-colors"
+              className="flex items-center gap-1 text-sm text-text-dim hover:text-accent-dark transition-colors"
             >
               <IconChevronLeft className="w-5 h-5" />
               {t.backToCurrent}
@@ -453,7 +453,7 @@ export default function Home() {
         <>
           <StageProgress currentStageId={currentStageId} stagePosition={stagePosition} />
 
-          {noteText && <p className="w-full max-w-xl text-sm text-accent font-medium">{noteText}</p>}
+          {noteText && <p className="w-full max-w-xl text-sm text-accent-dark font-semibold">{noteText}</p>}
 
           <QuestionCard question={currentQuestion} />
 

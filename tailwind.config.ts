@@ -19,9 +19,12 @@ const config: Config = {
         "accent-light": "#C98A4E",
         "accent-dark": "#7A481F",
         text: "#2C2015",
-        "text-dim": "#8A7355",
-        "text-muted": "#B8A582",
-        danger: "#B8452F",
+        // Darkened from the original design for elderly-friendly contrast:
+        // both now clear WCAG AA (4.5:1) against bg/surface/surface2, where
+        // the originals (#8A7355 / #B8A582) fell to ~4.1:1 and ~2.2:1.
+        "text-dim": "#6B5636",
+        "text-muted": "#75603C",
+        danger: "#9C3B27",
       },
       fontFamily: {
         serif: ["'Noto Serif KR'", "'Noto Serif JP'", "serif"],
