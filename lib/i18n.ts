@@ -86,6 +86,11 @@ export interface Dict {
   questionListProgress: (answered: number, total: number) => string;
   questionListClose: string;
   questionSelectedNote: string;
+  fontScaleTitle: string;
+  fontScaleHint: string;
+  fontScaleSmall: string;
+  fontScaleMedium: string;
+  fontScaleLarge: string;
 }
 
 const dict: Record<Lang, Dict> = {
@@ -142,7 +147,7 @@ const dict: Record<Lang, Dict> = {
     archiveProgress: (answered: number, total: number, started: number, stages: number) =>
       `${answered}/${total} 질문 답변 완료 · ${started}/${stages} 생애주기 진행중`,
     settingsTitle: "설정",
-    settingsBody: "준비 중이에요.",
+    settingsBody: "앱 환경을 설정할 수 있어요.",
     questionListButton: "전체 질문 보기",
     questionListTitle: "전체 질문 목록",
     questionListSubtitle: "원하는 질문을 골라 바로 답변할 수 있어요",
@@ -151,6 +156,11 @@ const dict: Record<Lang, Dict> = {
       `${answered}/${total} 답변완료`,
     questionListClose: "닫기",
     questionSelectedNote: "선택한 질문으로 이동했어요",
+    fontScaleTitle: "글자 크기",
+    fontScaleHint: "화면 전체 글자 크기를 조절해요",
+    fontScaleSmall: "소",
+    fontScaleMedium: "중",
+    fontScaleLarge: "대",
   },
   ja: {
     appName: "가치",
@@ -205,7 +215,7 @@ const dict: Record<Lang, Dict> = {
     archiveProgress: (answered: number, total: number, started: number, stages: number) =>
       `${answered}/${total} 問回答済み · ${started}/${stages} ライフステージ進行中`,
     settingsTitle: "設定",
-    settingsBody: "準備中です。",
+    settingsBody: "アプリの環境を設定できます。",
     questionListButton: "全質問を見る",
     questionListTitle: "全質問リスト",
     questionListSubtitle: "好きな質問を選んですぐに答えられます",
@@ -214,6 +224,11 @@ const dict: Record<Lang, Dict> = {
       `${answered}/${total} 回答済み`,
     questionListClose: "閉じる",
     questionSelectedNote: "選択した質問に移動しました",
+    fontScaleTitle: "文字の大きさ",
+    fontScaleHint: "画面全体の文字の大きさを調整します",
+    fontScaleSmall: "小",
+    fontScaleMedium: "中",
+    fontScaleLarge: "大",
   },
 };
 

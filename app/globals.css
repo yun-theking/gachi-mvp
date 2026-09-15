@@ -9,10 +9,19 @@
 
 html {
   scroll-behavior: smooth;
-  /* Elderly-friendly baseline: relative (%) rather than a fixed px so it still
-   * scales with whatever text-size the person's own browser/OS is set to,
-   * instead of overriding it. ~16px browser default -> ~18px effective. */
+  /* Text-size preference (Settings > 글자 크기). "소" is the app's original
+   * sizing (100%) and the default; "중"/"대" scale up from there. Using %
+   * rather than a fixed px means each step still scales relative to the
+   * person's own browser/OS text-size setting instead of overriding it. */
+  font-size: 100%;
+}
+
+html[data-font-scale="md"] {
   font-size: 112.5%;
+}
+
+html[data-font-scale="lg"] {
+  font-size: 125%;
 }
 
 body {
