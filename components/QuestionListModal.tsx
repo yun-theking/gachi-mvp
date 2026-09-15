@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLanguage } from "./LanguageProvider";
 import { useQuestionSelection } from "./QuestionSelectionProvider";
 import { IconClose, IconCheck } from "./icons";
@@ -66,7 +67,19 @@ export default function QuestionListModal() {
     };
   }, [questions]);
 
-  if (!isListOpen) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!isListOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isListOpen]);
+
+  if (!isListOpen || !mounted) return null;
 
   const handlePick = (stageList: QuestionApiRow[], q: QuestionApiRow) => {
     if (q.answered) return;
@@ -82,8 +95,8 @@ export default function QuestionListModal() {
     });
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-bg">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex flex-col bg-bg">
       <div className="sticky top-0 bg-bg/95 backdrop-blur border-b border-border">
         <div className="max-w-xl mx-auto px-4 py-4 flex flex-col gap-1">
           <div className="flex items-center justify-between">
@@ -154,6 +167,7 @@ export default function QuestionListModal() {
           })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
