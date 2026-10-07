@@ -8,7 +8,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "가치 (Gachi) — 나만의 회고록",
-  description: "닛케이「私の履歴書」106개 질문으로 완성하는 나의 이야기",
+  description: "목소리로 답하며 완성하는 나만의 회고록",
 };
 
 export default async function RootLayout({

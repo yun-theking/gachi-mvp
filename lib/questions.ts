@@ -1,8 +1,6 @@
 import { getDb } from "./db";
 import type { Lang } from "./auth";
-import { TOTAL_STAGES } from "./stages";
-
-export { TOTAL_STAGES };
+import { visibleStageIds, parseFields, serializeFields } from "./stages";
 
 export interface QuestionRow {
   id: number;
@@ -30,10 +28,33 @@ export interface StagePosition {
   total: number;
 }
 
-/** Lowest-numbered life stage that still has unanswered (and unskipped) questions for
- * this user, or null if all 106 are resolved. */
+/** The field groups this person picked. null = they haven't been asked yet
+ * (send them to the field picker); [] = they chose "none of these". */
+export async function getUserFields(userId: string): Promise<string[] | null> {
+  const db = await getDb();
+  const result = await db.execute({ sql: "SELECT fields FROM users WHERE id = ?", args: [userId] });
+  const row = result.rows[0] as unknown as { fields: string | null } | undefined;
+  return parseFields(row?.fields ?? null);
+}
+
+export async function setUserFields(userId: string, fields: string[]) {
+  const db = await getDb();
+  await db.execute({
+    sql: "UPDATE users SET fields = ? WHERE id = ?",
+    args: [serializeFields(fields), userId],
+  });
+}
+
+/** Section ids this person sees, in interview order (common stages, then
+ * their picked fields). */
+export async function getVisibleStageIds(userId: string): Promise<number[]> {
+  return visibleStageIds((await getUserFields(userId)) ?? []);
+}
+
+/** First section (in interview order) that still has unanswered, unskipped
+ * questions for this user, or null if they've been through everything. */
 export async function getCurrentStageId(userId: string): Promise<number | null> {
-  for (let stage = 1; stage <= TOTAL_STAGES; stage++) {
+  for (const stage of await getVisibleStageIds(userId)) {
     if ((await getRemainingQuestions(userId, stage)).length > 0) return stage;
   }
   return null;
@@ -48,6 +69,7 @@ export async function getRemainingQuestions(
     sql: `
       SELECT q.* FROM questions q
       WHERE q.life_stage_id = ?
+        AND q.active = 1
         AND q.id NOT IN (
           SELECT question_id FROM entries
           WHERE question_id IS NOT NULL AND user_id = ?
@@ -66,37 +88,44 @@ export interface QuestionWithStatus extends QuestionRow {
   answered: boolean;
 }
 
-/** All 108 questions, in stage/id order, each flagged with whether this user has
- * already answered it. Backs the "pick any question" list — unlike
- * getRemainingQuestions, this intentionally includes answered (and skipped)
- * questions too, since the picker needs to show and label the full set. */
+/** Every question this person can see (common + their picked fields), in
+ * interview order, each flagged with whether they've answered it. Backs the
+ * "pick any question" list — unlike getRemainingQuestions, this includes
+ * answered (and skipped) questions too, since the list shows the full set. */
 export async function getAllQuestionsWithStatus(userId: string): Promise<QuestionWithStatus[]> {
   const db = await getDb();
+  const stageIds = await getVisibleStageIds(userId);
   const result = await db.execute({
     sql: `
       SELECT q.*, CASE WHEN e.question_id IS NOT NULL THEN 1 ELSE 0 END as answered
       FROM questions q
       LEFT JOIN entries e ON e.question_id = q.id AND e.user_id = ?
-      ORDER BY q.life_stage_id, q.id
+      WHERE q.active = 1 AND q.life_stage_id IN (${stageIds.map(() => "?").join(",")})
+      ORDER BY q.id
     `,
-    args: [userId],
+    args: [userId, ...stageIds],
   });
-  return (result.rows as unknown as (QuestionRow & { answered: number | boolean })[]).map(
+  const rows = (result.rows as unknown as (QuestionRow & { answered: number | boolean })[]).map(
     (r) => ({ ...r, answered: !!r.answered })
+  );
+  // Order by interview order (common stages, then fields as picked).
+  const order = new Map(stageIds.map((id, i) => [id, i]));
+  return rows.sort(
+    (a, b) => order.get(a.life_stage_id)! - order.get(b.life_stage_id)! || a.id - b.id
   );
 }
 
 export async function getAllQuestionsInStage(stageId: number): Promise<QuestionRow[]> {
   const db = await getDb();
   const result = await db.execute({
-    sql: "SELECT * FROM questions WHERE life_stage_id = ? ORDER BY id",
+    sql: "SELECT * FROM questions WHERE life_stage_id = ? AND active = 1 ORDER BY id",
     args: [stageId],
   });
   return result.rows as unknown as QuestionRow[];
 }
 
-/** Question's position within its own life stage, e.g. "3번째 / 11개". Used for the
- * "OO개 질문 중 N번째" progress line — this is per-stage, not the overall 106 count. */
+/** Question's position within its own section, e.g. "3번째 / 5개". Used for the
+ * "OO개 질문 중 N번째" progress line — per section, not the overall count. */
 export async function getStagePosition(
   stageId: number,
   questionId: number
@@ -222,16 +251,25 @@ export async function getLastAnsweredEntry(userId: string): Promise<EntryRow | n
   return (result.rows[0] as unknown as EntryRow | undefined) ?? null;
 }
 
+/** Answered vs. total, counted over the questions this person can see now
+ * (so answers to retired questions or unpicked fields don't skew it). */
 export async function getProgressSummary(userId: string) {
   const db = await getDb();
+  const stageIds = await getVisibleStageIds(userId);
+  const inStages = `q.active = 1 AND q.life_stage_id IN (${stageIds.map(() => "?").join(",")})`;
   const totalAnsweredResult = await db.execute({
-    sql: "SELECT COUNT(*) as c FROM entries WHERE user_id = ?",
-    args: [userId],
+    sql: `SELECT COUNT(*) as c FROM entries e JOIN questions q ON q.id = e.question_id
+          WHERE e.user_id = ? AND ${inStages}`,
+    args: [userId, ...stageIds],
   });
-  const totalQuestionsResult = await db.execute("SELECT COUNT(*) as c FROM questions");
+  const totalQuestionsResult = await db.execute({
+    sql: `SELECT COUNT(*) as c FROM questions q WHERE ${inStages}`,
+    args: stageIds,
+  });
   return {
     totalAnswered: Number(totalAnsweredResult.rows[0].c as number),
     totalQuestions: Number(totalQuestionsResult.rows[0].c as number),
+    totalStages: stageIds.length,
   };
 }
 

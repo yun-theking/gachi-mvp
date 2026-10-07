@@ -80,6 +80,10 @@ export default function Home() {
     api
       .fetchNextQuestion()
       .then((data) => {
+        if (data.needsFields) {
+          window.location.href = "/fields?next=/";
+          return;
+        }
         applyCurrentQuestion(data.nextQuestion, data.stagePosition);
         setHasAnsweredAny((data.progress?.totalAnswered ?? 0) > 0);
       })

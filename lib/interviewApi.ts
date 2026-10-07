@@ -39,6 +39,7 @@ export async function fetchNextQuestion() {
     nextQuestion: BankQuestion | null;
     stagePosition: StagePos | null;
     progress?: { totalAnswered: number; totalQuestions: number };
+    needsFields?: boolean;
   }>(await fetch("/api/next-question"));
 }
 

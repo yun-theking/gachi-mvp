@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { getAllEntries, getProgressSummary } from "@/lib/questions";
-import { TOTAL_STAGES, stageName } from "@/lib/stages";
+import { SECTIONS, stageHeading } from "@/lib/stages";
 import { USER_COOKIE, LANG_COOKIE, DEFAULT_LANG, isValidLang } from "@/lib/auth";
 import { getDict } from "@/lib/i18n";
 import ChapterPanel from "@/components/ChapterPanel";
@@ -37,7 +37,7 @@ export default async function ArchivePage() {
   return (
     <main className="min-h-screen flex flex-col items-center gap-8 py-8 px-4">
       <p className="text-sm text-text-dim tracking-widest uppercase text-center">
-        {t.archiveProgress(progress.totalAnswered, progress.totalQuestions, stagesStarted, TOTAL_STAGES)}
+        {t.archiveProgress(progress.totalAnswered, progress.totalQuestions, stagesStarted, progress.totalStages)}
       </p>
 
       {entries.length === 0 ? (
@@ -46,12 +46,12 @@ export default async function ArchivePage() {
         </div>
       ) : (
         <div className="w-full max-w-xl flex flex-col gap-10">
-          {Array.from({ length: TOTAL_STAGES }, (_, i) => i + 1)
+          {SECTIONS.map((s) => s.id)
             .filter((stageId) => byStage.has(stageId))
             .map((stageId) => (
               <section key={stageId} className="flex flex-col gap-4">
                 <h2 className="font-serif text-lg text-accent-dark border-b border-border pb-2">
-                  {stageId}. {stageName(lang, stageId)}
+                  {stageHeading(lang, stageId)}
                 </h2>
                 {byStage.get(stageId)!.map((entry) => (
                   <ChapterPanel

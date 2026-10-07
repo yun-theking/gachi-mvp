@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 import type { BankQuestion } from "./QuestionCard";
 import type { StagePosition } from "@/lib/questions";
 
-/** A question picked from the full 108-question list, plus its position within
+/** A question picked from the full question list, plus its position within
  * its own stage — computed client-side from the already-fetched list, so
  * picking a question doesn't need an extra round trip. */
 export interface SelectedQuestion extends BankQuestion {

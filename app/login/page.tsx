@@ -53,7 +53,10 @@ function LoginForm() {
       // destination route from before login, so the freshly-set language
       // cookie doesn't reliably show up on the very first paint (e.g. the
       // onboarding tutorial rendering in the wrong language).
-      window.location.href = searchParams.get("next") || "/";
+      const next = searchParams.get("next") || "/";
+      window.location.href = data.needsFields
+        ? `/fields?next=${encodeURIComponent(next)}`
+        : next;
     } catch (err) {
       setError(err instanceof Error ? err.message : t.loginErrorGeneric);
       setLoading(false);

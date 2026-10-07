@@ -64,6 +64,15 @@ export interface Dict {
   fontScaleSmall: string;
   fontScaleMedium: string;
   fontScaleLarge: string;
+  fieldsTitle: string;
+  fieldsSubtitle: string;
+  fieldsDone: (count: number) => string;
+  fieldsNone: string;
+  fieldsCancel: string;
+  settingsFieldsLabel: string;
+  settingsFieldsNone: string;
+  settingsFieldsChange: string;
+  questionListFieldsHeading: string;
   navMenuLabel: string;
   navListLabel: string;
   navProfileLabel: string;
@@ -82,7 +91,7 @@ export interface Dict {
 
 const dict: Record<Lang, Dict> = {
   ko: {
-    appTagline: "닛케이「私の履歴書」에서 영감을 받은 106개 질문으로, 목소리로 답하며 완성하는 나만의 회고록입니다.",
+    appTagline: "생애사 인터뷰 방법론에 기반한 질문에 목소리로 답하며 완성하는 나만의 회고록입니다.",
     navInterview: "인터뷰",
     navArchive: "내 회고록",
     navSettings: "설정",
@@ -125,7 +134,7 @@ const dict: Record<Lang, Dict> = {
     skippedNote: "질문을 건너뛰었어요",
     noPreviousNote: "아직 답변한 질문이 없어요",
     stageAdvancedNote: "다음 생애주기로 넘어갑니다 →",
-    allDoneTitle: "106개 질문을 모두 마쳤습니다",
+    allDoneTitle: "모든 질문을 마쳤습니다",
     allDoneBody: "“내 회고록” 메뉴에서 지금까지 쌓인 이야기를 확인해보세요.",
     allStagesDone: "모든 생애주기를 완료했어요",
     questionCountLabel: (position: number, total: number, stage: string) =>
@@ -149,6 +158,15 @@ const dict: Record<Lang, Dict> = {
     fontScaleSmall: "소",
     fontScaleMedium: "중",
     fontScaleLarge: "대",
+    fieldsTitle: "어떤 일을 해오셨나요?",
+    fieldsSubtitle: "해당하는 분야나 경험을 모두 골라주세요. 고르신 분야에 맞는 질문이 추가돼요. 나중에 설정에서 바꿀 수 있어요.",
+    fieldsDone: (count: number) => `${count}개 선택 완료`,
+    fieldsNone: "해당 없음으로 계속하기",
+    fieldsCancel: "바꾸지 않고 돌아가기",
+    settingsFieldsLabel: "나의 분야",
+    settingsFieldsNone: "선택한 분야가 없어요",
+    settingsFieldsChange: "분야 바꾸기",
+    questionListFieldsHeading: "나의 분야 질문",
     navMenuLabel: "메뉴",
     navListLabel: "목록",
     navProfileLabel: "내 정보",
@@ -165,7 +183,7 @@ const dict: Record<Lang, Dict> = {
     onboardingSampleChapter: "그 시절, 나는...",
   },
   ja: {
-    appTagline: "日経「私の履歴書」に着想を得た106の質問に、声で答えて完成させる自分だけの回顧録です。",
+    appTagline: "生涯史インタビューの手法に基づく質問に、声で答えて完成させる自分だけの回顧録です。",
     navInterview: "インタビュー",
     navArchive: "マイ回顧録",
     navSettings: "設定",
@@ -208,7 +226,7 @@ const dict: Record<Lang, Dict> = {
     skippedNote: "質問をスキップしました",
     noPreviousNote: "まだ回答した質問がありません",
     stageAdvancedNote: "次のライフステージに進みます →",
-    allDoneTitle: "106の質問すべてに回答しました",
+    allDoneTitle: "すべての質問に回答しました",
     allDoneBody: "「マイ回顧録」メニューでこれまでの話を確認してみてください。",
     allStagesDone: "すべてのライフステージが完了しました",
     questionCountLabel: (position: number, total: number, stage: string) =>
@@ -232,6 +250,15 @@ const dict: Record<Lang, Dict> = {
     fontScaleSmall: "小",
     fontScaleMedium: "中",
     fontScaleLarge: "大",
+    fieldsTitle: "どのようなお仕事・ご経験をされてきましたか？",
+    fieldsSubtitle: "当てはまる分野やご経験をすべて選んでください。選んだ分野に合わせた質問が追加されます。あとから設定で変更できます。",
+    fieldsDone: (count: number) => `${count}件を選んで次へ`,
+    fieldsNone: "当てはまらないので次へ",
+    fieldsCancel: "変更せずに戻る",
+    settingsFieldsLabel: "あなたの分野",
+    settingsFieldsNone: "選択した分野はありません",
+    settingsFieldsChange: "分野を変更する",
+    questionListFieldsHeading: "あなたの分野の質問",
     navMenuLabel: "メニュー",
     navListLabel: "リスト",
     navProfileLabel: "マイページ",

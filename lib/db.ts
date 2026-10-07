@@ -13,6 +13,7 @@ interface BankQuestion {
 
 interface BankStage {
   life_stage_id: number;
+  field_code?: string;
   life_stage_ko: string;
   life_stage_ja: string;
   questions: BankQuestion[];
@@ -132,6 +133,25 @@ async function migrateSchema(db: Client) {
     await db.execute("ALTER TABLE users ADD COLUMN language TEXT NOT NULL DEFAULT 'ko'");
   }
 
+  const questionCols = await db.execute("PRAGMA table_info(questions)");
+  const qColNames = questionCols.rows.map((r) => (r as unknown as { name: string }).name);
+  if (!qColNames.includes("field_code")) {
+    // NULL = common question (everyone); otherwise the field group it belongs to.
+    await db.execute("ALTER TABLE questions ADD COLUMN field_code TEXT");
+  }
+  if (!qColNames.includes("active")) {
+    // 0 = no longer in question_bank.json, but kept because someone answered it.
+    await db.execute("ALTER TABLE questions ADD COLUMN active INTEGER NOT NULL DEFAULT 1");
+  }
+
+  const userColNames = (await db.execute("PRAGMA table_info(users)")).rows.map(
+    (r) => (r as unknown as { name: string }).name
+  );
+  if (!userColNames.includes("fields")) {
+    // Comma-separated field codes. NULL = not asked yet, "" = chose none.
+    await db.execute("ALTER TABLE users ADD COLUMN fields TEXT");
+  }
+
   await db.execute(
     `CREATE TABLE IF NOT EXISTS login_rate_limit (
        ip TEXT PRIMARY KEY,
@@ -142,53 +162,52 @@ async function migrateSchema(db: Client) {
 }
 
 /**
- * Syncs the questions table from data/question_bank.json on every startup
- * (insert new, update changed text/stage names) so the JSON really is the
- * source of truth — editing or regenerating the bank shows up without
- * wiping the DB.
+ * Syncs the questions table from data/question_bank.json on every startup,
+ * so the JSON is the source of truth: editing, adding or removing questions
+ * there shows up without wiping the DB.
  *
- * IDs are positional (1..N in file order), and entries reference them, so
- * when updating the bank: edit wording in place or append new questions at
- * the very end of the file — inserting mid-file shifts every later
- * ID. Questions removed from the end of the file are removed from the
- * table too, unless someone has already answered them (those rows stay so
- * their answers keep a valid reference).
+ * Every question has a fixed id in the JSON (not its position), so adding or
+ * reordering questions never re-points existing answers at different ones.
+ * Questions that disappear from the JSON are deleted, or — if someone has
+ * already answered them — kept but marked inactive, so they leave every
+ * question list while the answers stay in the archive.
  */
 async function seedQuestions(db: Client) {
   const bank: BankStage[] = JSON.parse(fs.readFileSync(BANK_PATH, "utf-8"));
 
-  let globalId = 1;
-  const statements: { sql: string; args: (string | number)[] }[] = [];
+  const statements: { sql: string; args: (string | number | null)[] }[] = [
+    { sql: "UPDATE questions SET active = 0", args: [] },
+  ];
   for (const stage of bank) {
     for (const q of stage.questions) {
       statements.push({
-        sql: `INSERT INTO questions (id, life_stage_id, life_stage_ko, life_stage_ja, question_ko, question_ja)
-              VALUES (?, ?, ?, ?, ?, ?)
+        sql: `INSERT INTO questions (id, life_stage_id, life_stage_ko, life_stage_ja, question_ko, question_ja, field_code, active)
+              VALUES (?, ?, ?, ?, ?, ?, ?, 1)
               ON CONFLICT(id) DO UPDATE SET
                 life_stage_id = excluded.life_stage_id,
                 life_stage_ko = excluded.life_stage_ko,
                 life_stage_ja = excluded.life_stage_ja,
                 question_ko = excluded.question_ko,
-                question_ja = excluded.question_ja`,
+                question_ja = excluded.question_ja,
+                field_code = excluded.field_code,
+                active = 1`,
         args: [
-          globalId++,
+          q.id,
           stage.life_stage_id,
           stage.life_stage_ko,
           stage.life_stage_ja,
           q.question_ko,
           q.question_ja,
+          stage.field_code ?? null,
         ],
       });
     }
   }
-  // Only drop removed questions nobody has answered: entries reference
-  // questions(id), and deleting a referenced row would fail the whole batch
-  // wherever foreign keys are enforced (and block startup).
   statements.push({
     sql: `DELETE FROM questions
-          WHERE id >= ?
+          WHERE active = 0
             AND id NOT IN (SELECT question_id FROM entries WHERE question_id IS NOT NULL)`,
-    args: [globalId],
+    args: [],
   });
   await db.batch(statements, "write");
 }

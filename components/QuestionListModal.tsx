@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useLanguage } from "./LanguageProvider";
 import { useQuestionSelection } from "./QuestionSelectionProvider";
 import { IconClose, IconCheck } from "./icons";
+import { isFieldStage } from "@/lib/stages";
 
 interface QuestionApiRow {
   id: number;
@@ -54,9 +55,8 @@ export default function QuestionListModal() {
       if (list) list.push(q);
       else byStage.set(q.life_stage_id, [q]);
     }
-    return Array.from(byStage.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([stageId, list]) => ({ stageId, list }));
+    // Map keeps insertion order, i.e. the server's interview order.
+    return Array.from(byStage.entries()).map(([stageId, list]) => ({ stageId, list }));
   }, [questions]);
 
   const { answeredCount, totalCount } = useMemo(() => {
@@ -130,12 +130,19 @@ export default function QuestionListModal() {
             </div>
           )}
 
-          {stages.map(({ stageId, list }) => {
+          {stages.map(({ stageId, list }, i) => {
             const stageLabel = lang === "ja" ? list[0].life_stage_ja : list[0].life_stage_ko;
+            const isField = isFieldStage(stageId);
+            const firstField = isField && (i === 0 || !isFieldStage(stages[i - 1].stageId));
             return (
               <div key={stageId} className="flex flex-col gap-2">
+                {firstField && (
+                  <h2 className="font-serif text-lg font-bold text-text border-t border-border pt-5 mt-2">
+                    {t.questionListFieldsHeading}
+                  </h2>
+                )}
                 <h3 className="text-sm font-semibold text-accent-dark px-1">
-                  {stageId}. {stageLabel}
+                  {isField ? stageLabel : `${stageId}. ${stageLabel}`}
                 </h3>
                 <div className="flex flex-col gap-2.5">
                   {list.map((q) => {

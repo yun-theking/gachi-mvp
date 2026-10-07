@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/apiErrors";
-import { getAllEntries, getProgressSummary, TOTAL_STAGES } from "@/lib/questions";
+import { getAllEntries, getProgressSummary } from "@/lib/questions";
 import { USER_COOKIE } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
@@ -19,7 +19,6 @@ export async function GET(req: NextRequest) {
     progress: {
       ...progress,
       stagesStarted: stageIds.size,
-      totalStages: TOTAL_STAGES,
     },
   });
 }

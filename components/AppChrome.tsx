@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import TopBar from "./TopBar";
 import BottomNav from "./BottomNav";
 
-const NO_CHROME_PREFIXES = ["/login", "/admin"];
+const NO_CHROME_PREFIXES = ["/login", "/admin", "/fields"];
 
 export default function AppChrome({
   userId,

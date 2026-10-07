@@ -1,6 +1,6 @@
 # 가치 (Gachi) — 시니어 AI 회고록 서비스
 
-닛케이신문「私の履歴書」83인 회고록을 분석해 만든 **생애주기 10단계 × 106개 질문뱅크**를 기반으로,
+생애사 인터뷰 방법론 기반의 **공통 질문 50개(생애주기 10단계 × 5) + 분야별 질문 88개(11개 분야 × 8)**를 바탕으로,
 음성 인터뷰 → 회고록 챕터 자동 생성 → 개인 아카이브에 누적 저장하는 웹 서비스.
 
 ## 지금 상태 (2026-08-15 기준)
@@ -16,13 +16,14 @@ cp .env.local.example .env.local   # OPENAI_API_KEY 채워넣기
 npm run dev
 ```
 
-`http://localhost:3000` 접속. 첫 실행 시 `data/gachi.db`가 자동 생성되고 106개 질문이 시드됩니다.
+`http://localhost:3000` 접속. 첫 실행 시 `data/gachi.db`가 자동 생성되고, 실행할 때마다 `data/question_bank.json`의 질문이 DB에 동기화됩니다.
 
 ⚠️ **Node 버전 주의**: Node 22+ 필요 (`node:sqlite` 내장 모듈 사용). Node 25.x에서는 Web Storage API 기본 활성화 버그로 페이지 렌더링이 깨지는데, `package.json`의 `dev`/`build`/`start` 스크립트에 이미 `NODE_OPTIONS=--no-experimental-webstorage`를 넣어서 우회 처리해뒀습니다. 직접 안 건드려도 됨.
 
 ## 어떻게 동작하나
 
-1. 사용자가 화면에 뜬 질문(106개 중 1개, 생애주기 순서대로 진행)에 음성으로 답변
+0. 첫 로그인 시 직업·경험 분야를 고름(여러 개 가능, 설정에서 변경 가능)
+1. 사용자가 화면에 뜬 질문(공통 10단계 → 고른 분야 순서로 진행)에 음성으로 답변
 2. `/api/transcribe` — Whisper로 STT
 3. `/api/generate` — GPT-4o가 (a) 답변을 1인칭 회고록 챕터로 재구성하고, (b) 현재 생애주기의 남은 질문 후보 중 대화 맥락에 가장 잘 맞는 다음 질문 1개를 **id로 선택** (질문 문구 자체는 GPT가 새로 짓지 않고 항상 DB의 큐레이션된 원문 그대로 사용)
 4. 결과를 SQLite(`entries` 테이블)에 저장 → `/archive` 페이지에서 생애주기별로 모아볼 수 있음
@@ -39,7 +40,8 @@ app/api/entries/          아카이브용 전체 기록 + 진행률 조회
 components/               QuestionCard, RecordButton, ChapterPanel, StageProgress
 lib/db.ts                 SQLite 연결 + 자동 시드
 lib/questions.ts          생애주기/질문 선택 헬퍼
-data/question_bank.json   질문뱅크 원본 (106개, 한/일 병기) — 여기가 source of truth
+data/question_bank.json   질문뱅크 원본 (공통 50 + 분야별 88, 한/일 병기) — 여기가 source of truth.
+                          질문마다 고정 id가 있어요. 문구 수정·추가·삭제는 자유롭지만 기존 id는 바꾸지 마세요(기존 답변이 그 id를 가리켜요).
 ```
 
 레거시/실험 파일은 `legacy/` 폴더로 모아뒀어요 (앱 동작과 무관, 건드릴 필요 없음): `index.html`, `server.py`, `share.html` — 초기 vanilla JS 프로토타입. `gap_question_demo.py`, `s2s_latency_test.py` — 리서치용 스크립트.

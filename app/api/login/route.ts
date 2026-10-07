@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/apiErrors";
-import { registerUser, checkIpRateLimit, recordIpLoginAttempt } from "@/lib/questions";
+import { registerUser, checkIpRateLimit, recordIpLoginAttempt, getUserFields } from "@/lib/questions";
 import { USER_COOKIE, LANG_COOKIE, DEFAULT_LANG, isValidUserId, isValidLang } from "@/lib/auth";
 
 function clientIp(req: NextRequest): string {
@@ -27,8 +27,9 @@ export async function POST(req: NextRequest) {
   const lang = isValidLang(language) ? language : DEFAULT_LANG;
 
   await registerUser(userId, lang);
+  const needsFields = (await getUserFields(userId)) === null;
 
-  const res = NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true, needsFields });
   res.cookies.set(USER_COOKIE, userId, {
     httpOnly: true,
     sameSite: "lax",
