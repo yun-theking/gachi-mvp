@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { getDb } from "@/lib/db";
 import { ADMIN_COOKIE } from "@/lib/auth";
+import { stageNameEn } from "@/lib/stages";
 
 interface EntryExportRow {
   user_id: string;
@@ -13,23 +14,6 @@ interface EntryExportRow {
   chapter: string;
   created_at: string;
 }
-
-/** English labels for the life-stage column. Kept local to the export route
- * (rather than added to STAGE_NAMES) since the in-app STAGE_NAMES map only
- * covers the languages the product UI itself supports (ko/ja); this export
- * is admin-facing and English-based regardless of the user's app language. */
-const STAGE_NAMES_EN: Record<number, string> = {
-  1: "Childhood & Upbringing",
-  2: "School Days & Early Youth",
-  3: "Early Career: First Job / Startup",
-  4: "Growth-Stage Career: Challenges & Failures",
-  5: "Peak Years: Leadership & Decisions",
-  6: "Crisis & Hardship: Overcoming",
-  7: "Relationships: Mentors & Colleagues",
-  8: "Family: Marriage & Personal Life",
-  9: "Values & Life Philosophy",
-  10: "After Retirement: Words for the Next Generation",
-};
 
 function languageLabel(language: string): string {
   return language === "ja" ? "Japanese" : "Korean";
@@ -54,7 +38,7 @@ function addEntryRows(sheet: ExcelJS.Worksheet, rows: EntryExportRow[]) {
     sheet.addRow({
       user_id: r.user_id,
       language: languageLabel(r.language),
-      stage: `${r.life_stage_id}. ${STAGE_NAMES_EN[r.life_stage_id] ?? ""}`,
+      stage: `${r.life_stage_id}. ${stageNameEn(r.life_stage_id)}`,
       question_ko: r.question_ko,
       question_ja: r.question_ja,
       transcript: r.transcript,

@@ -3,6 +3,9 @@
     "life_stage_id": 1,
     "life_stage_ko": "유년기·성장배경",
     "life_stage_ja": "幼少期・生い立ち",
+    "life_stage_short_ko": "유년기",
+    "life_stage_short_ja": "幼少期",
+    "life_stage_en": "Childhood & Upbringing",
     "questions": [
       {
         "id": 1,
@@ -70,6 +73,9 @@
     "life_stage_id": 2,
     "life_stage_ko": "학창시절·청년기",
     "life_stage_ja": "学生時代・青年期",
+    "life_stage_short_ko": "학창시절",
+    "life_stage_short_ja": "学生時代",
+    "life_stage_en": "School Days & Early Youth",
     "questions": [
       {
         "id": 1,
@@ -137,6 +143,9 @@
     "life_stage_id": 3,
     "life_stage_ko": "사회초년·입사/창업초기",
     "life_stage_ja": "社会人1年目・入社/創業初期",
+    "life_stage_short_ko": "사회초년",
+    "life_stage_short_ja": "社会人初期",
+    "life_stage_en": "Early Career: First Job / Startup",
     "questions": [
       {
         "id": 1,
@@ -204,6 +213,9 @@
     "life_stage_id": 4,
     "life_stage_ko": "성장기 커리어·도전과 실패",
     "life_stage_ja": "キャリア形成期・挑戦と失敗",
+    "life_stage_short_ko": "커리어",
+    "life_stage_short_ja": "キャリア",
+    "life_stage_en": "Growth-Stage Career: Challenges & Failures",
     "questions": [
       {
         "id": 1,
@@ -271,6 +283,9 @@
     "life_stage_id": 5,
     "life_stage_ko": "전성기·리더십과 결단",
     "life_stage_ja": "絶頂期・リーダーシップと決断",
+    "life_stage_short_ko": "리더십",
+    "life_stage_short_ja": "リーダーシップ",
+    "life_stage_en": "Peak Years: Leadership & Decisions",
     "questions": [
       {
         "id": 1,
@@ -343,6 +358,9 @@
     "life_stage_id": 6,
     "life_stage_ko": "위기와 시련·극복",
     "life_stage_ja": "危機と試練・克服",
+    "life_stage_short_ko": "위기극복",
+    "life_stage_short_ja": "危機克服",
+    "life_stage_en": "Crisis & Hardship: Overcoming",
     "questions": [
       {
         "id": 1,
@@ -405,6 +423,9 @@
     "life_stage_id": 7,
     "life_stage_ko": "인간관계·은사와 동료",
     "life_stage_ja": "人間関係・恩師と同僚",
+    "life_stage_short_ko": "인간관계",
+    "life_stage_short_ja": "人間関係",
+    "life_stage_en": "Relationships: Mentors & Colleagues",
     "questions": [
       {
         "id": 1,
@@ -452,6 +473,9 @@
     "life_stage_id": 8,
     "life_stage_ko": "가정·결혼과 사생활",
     "life_stage_ja": "家庭・結婚と私生活",
+    "life_stage_short_ko": "가정",
+    "life_stage_short_ja": "家庭",
+    "life_stage_en": "Family: Marriage & Personal Life",
     "questions": [
       {
         "id": 1,
@@ -504,6 +528,9 @@
     "life_stage_id": 9,
     "life_stage_ko": "가치관·인생철학",
     "life_stage_ja": "価値観・人生哲学",
+    "life_stage_short_ko": "가치관",
+    "life_stage_short_ja": "価値観",
+    "life_stage_en": "Values & Life Philosophy",
     "questions": [
       {
         "id": 1,
@@ -551,6 +578,9 @@
     "life_stage_id": 10,
     "life_stage_ko": "은퇴 이후·후대에 남기는 말",
     "life_stage_ja": "引退後・後世へのメッセージ",
+    "life_stage_short_ko": "은퇴",
+    "life_stage_short_ja": "引退後",
+    "life_stage_en": "After Retirement: Words for the Next Generation",
     "questions": [
       {
         "id": 1,

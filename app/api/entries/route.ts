@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/apiErrors";
 import { getAllEntries, getProgressSummary, TOTAL_STAGES } from "@/lib/questions";
 import { USER_COOKIE } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const userId = req.cookies.get(USER_COOKIE)?.value;
   if (!userId) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return apiError("UNAUTHORIZED", 401);
   }
 
   const entries = await getAllEntries(userId);

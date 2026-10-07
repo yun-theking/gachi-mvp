@@ -10,30 +10,9 @@ import { IconChevronLeft } from "@/components/icons";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useQuestionSelection } from "@/components/QuestionSelectionProvider";
 import OnboardingModal from "@/components/OnboardingModal";
-
-const MAX_RECORDING_SECONDS = 600; // 10 minutes
-const WARNING_AT_SECONDS = 570; // warn 30s before auto-stop
-
-interface HistoryEntry {
-  role: "user" | "assistant";
-  content: string;
-}
-
-interface StagePos {
-  position: number;
-  total: number;
-}
-
-interface PreviousEntry {
-  questionId: number;
-  lifeStageId: number;
-  lifeStageKo: string;
-  lifeStageJa: string;
-  questionKo: string;
-  questionJa: string;
-  transcript: string;
-  chapter: string;
-}
+import { useRecorder, WARNING_AT_SECONDS } from "@/hooks/useRecorder";
+import * as api from "@/lib/interviewApi";
+import type { SavedEntry, StagePos } from "@/lib/interviewApi";
 
 type ErrorKind = "mic" | "network" | "silence" | null;
 
@@ -42,10 +21,8 @@ export default function Home() {
   const { pendingSelection, consumeSelection } = useQuestionSelection();
 
   const [step, setStep] = useState<Step>("idle");
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [error, setError] = useState("");
   const [errorKind, setErrorKind] = useState<ErrorKind>(null);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   const [currentQuestion, setCurrentQuestion] = useState<BankQuestion | null>(null);
   const [currentStageId, setCurrentStageId] = useState<number | null>(1);
@@ -57,220 +34,89 @@ export default function Home() {
   const [lastChapter, setLastChapter] = useState("");
   const [noteText, setNoteText] = useState("");
 
-  // "이전 질문" redo mode
+  // Redo mode: re-answering an already-answered question (the most recent
+  // one via "이전 질문", or any one picked from the full question list).
   const [mode, setMode] = useState<"normal" | "redo">("normal");
-  const [previousEntry, setPreviousEntry] = useState<PreviousEntry | null>(null);
+  const [previousEntry, setPreviousEntry] = useState<SavedEntry | null>(null);
   const [loadingPrevious, setLoadingPrevious] = useState(false);
-
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Kept across a failed send so "다시 보내기" can retry without re-recording.
   const pendingBlobRef = useRef<Blob | null>(null);
   const pendingTextRef = useRef<string | null>(null);
-  const autoStopRef = useRef<((auto?: boolean) => void) | null>(null);
-
-  const loadNextQuestion = useCallback(async () => {
-    const res = await fetch("/api/next-question");
-    const data = await res.json();
-    setCurrentQuestion(data.nextQuestion);
-    setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
-    setStagePosition(data.stagePosition);
-    setHasAnsweredAny((data.progress?.totalAnswered ?? 0) > 0);
-    setInitialLoading(false);
-  }, []);
-
-  useEffect(() => {
-    loadNextQuestion();
-  }, [loadNextQuestion]);
-
-  // Applies a question picked from the "all questions" list. If a recording
-  // was in progress, stop it without transcribing/sending — jumping to a
-  // different question mid-recording means that take is abandoned.
-  useEffect(() => {
-    if (!pendingSelection) return;
-
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.onstop = null;
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
-    }
-    pendingBlobRef.current = null;
-    pendingTextRef.current = null;
-
-    setErrorKind(null);
-    setError("");
-    setLastChapter("");
-    setStep("idle");
-    setNoteText("");
-
-    const picked = pendingSelection;
-    consumeSelection();
-
-    if (picked.answered) {
-      // Already answered: open it in redo mode with the saved answer shown,
-      // same screen the "이전 질문" button uses. The current question
-      // pointer is left alone so "현재 질문으로 돌아가기" still works.
-      (async () => {
-        try {
-          const res = await fetch(`/api/previous-question?questionId=${picked.id}`);
-          const data = await res.json();
-          if (!data.entry) throw new Error("not found");
-          setPreviousEntry(data.entry);
-          setMode("redo");
-        } catch {
-          setMode("normal");
-          setPreviousEntry(null);
-          setNoteText(t.networkErrorMessage);
-        }
-      })();
-      return;
-    }
-
-    setMode("normal");
-    setPreviousEntry(null);
-    setCurrentQuestion(picked);
-    setCurrentStageId(picked.life_stage_id);
-    setStagePosition(picked.stagePosition);
-    setNoteText(t.questionSelectedNote);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingSelection]);
 
   const activeQuestionId =
     mode === "redo" ? previousEntry?.questionId : currentQuestion?.id;
 
-  const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : "audio/webm",
-        // Bounds file size predictably: ~4.8MB for a full 10-minute take,
-        // safely under Whisper's 25MB limit.
-        audioBitsPerSecond: 64000,
-      });
-
-      chunksRef.current = [];
-      mediaRecorderRef.current = mediaRecorder;
-      pendingBlobRef.current = null;
-      pendingTextRef.current = null;
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.start(100);
-      setStep("recording");
-      setRecordingSeconds(0);
-      setError("");
-      setErrorKind(null);
-      setNoteText("");
-
-      timerRef.current = setInterval(() => {
-        setRecordingSeconds((s) => {
-          const next = s + 1;
-          if (next >= MAX_RECORDING_SECONDS) {
-            autoStopRef.current?.(true);
-          }
-          return next;
-        });
-      }, 1000);
-    } catch {
-      setError(t.micDenied);
-      setErrorKind("mic");
-      setStep("error");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t]);
-
-  const stopRecording = useCallback(
-    (auto = false) => {
-      const mediaRecorder = mediaRecorderRef.current;
-      if (!mediaRecorder) return;
-
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        mediaRecorder.stream.getTracks().forEach((track) => track.stop());
-        if (auto) setNoteText(t.recordingAutoStopped);
-        await processAudio(blob);
-      };
-
-      mediaRecorder.stop();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    },
-    [activeQuestionId, history, mode, t]
-  );
-
-  useEffect(() => {
-    autoStopRef.current = stopRecording;
-  }, [stopRecording]);
-
-  const transcribeAudio = async (blob: Blob): Promise<string> => {
-    const formData = new FormData();
-    formData.append("audio", blob, "recording.webm");
-    const res = await fetch("/api/transcribe", { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "STT failed");
-    return data.text as string;
+  const showError = (kind: Exclude<ErrorKind, null>, message: string) => {
+    setError(message);
+    setErrorKind(kind);
+    setStep("error");
   };
 
-  const generateChapter = async (text: string) => {
-    const res = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        text,
-        questionId: activeQuestionId,
-        history: mode === "redo" ? [] : history,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || t.loginErrorGeneric);
+  const clearError = () => {
+    setError("");
+    setErrorKind(null);
+  };
 
+  const applyCurrentQuestion = (q: BankQuestion | null, pos: StagePos | null) => {
+    setCurrentQuestion(q);
+    setCurrentStageId(q?.life_stage_id ?? null);
+    setStagePosition(pos);
+  };
+
+  const enterRedo = (entry: SavedEntry) => {
+    setPreviousEntry(entry);
+    setMode("redo");
+    setStep("idle");
+  };
+
+  const exitRedo = () => {
+    setMode("normal");
+    setPreviousEntry(null);
+  };
+
+  // ── Initial load ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    api
+      .fetchNextQuestion()
+      .then((data) => {
+        applyCurrentQuestion(data.nextQuestion, data.stagePosition);
+        setHasAnsweredAny((data.progress?.totalAnswered ?? 0) > 0);
+      })
+      .catch(() => setNoteText(t.networkErrorMessage))
+      .finally(() => setInitialLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Answer pipeline: transcribe → generate chapter → save ────────────────
+  const generateChapter = async (text: string) => {
+    const data = await api.generate(text, activeQuestionId);
     setLastChapter(data.chapter);
+    setHasAnsweredAny(true);
 
     if (mode === "redo") {
-      // Re-answering an already-answered question only overwrites that
-      // answer. Keep whatever question the person was on before (which may
-      // be one they hand-picked from the list) instead of jumping to the
-      // API's suggested next question, then hop back to the normal flow.
+      // Re-answering only overwrites that answer. Keep whatever question the
+      // person was on before (possibly hand-picked from the list) instead of
+      // jumping to the API's suggested next question.
       setNoteText(t.redoSavedNote);
-      setMode("normal");
-      setPreviousEntry(null);
+      exitRedo();
     } else {
-      if (data.stageAdvanced) {
-        setNoteText(t.stageAdvancedNote);
-      }
-      setCurrentQuestion(data.nextQuestion);
-      setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
-      setStagePosition(data.stagePosition);
+      if (data.stageAdvanced) setNoteText(t.stageAdvancedNote);
+      applyCurrentQuestion(data.nextQuestion, data.stagePosition);
     }
+  };
 
-    setHistory((prev) => [
-      ...prev,
-      { role: "user", content: text },
-      // Only what the model itself produced, in its own output shape —
-      // not the whole API response (progress counts, stage position, etc.),
-      // which is UI bookkeeping that just costs tokens and adds noise.
-      {
-        role: "assistant",
-        content: JSON.stringify({
-          chapter: data.chapter,
-          next_question_id: data.nextQuestion?.id ?? null,
-        }),
-      },
-    ]);
+  const runGenerate = async (text: string) => {
+    setStep("generating");
+    try {
+      await generateChapter(text);
+    } catch {
+      showError("network", t.networkErrorMessage);
+      return;
+    }
+    pendingBlobRef.current = null;
+    pendingTextRef.current = null;
+    setStep("done");
   };
 
   const processAudio = async (blob: Blob) => {
@@ -281,57 +127,50 @@ export default function Home() {
 
     let text: string;
     try {
-      text = await transcribeAudio(blob);
+      text = await api.transcribe(blob);
     } catch {
       // Audio is kept in pendingBlobRef — "다시 보내기" retries this exact
       // recording without asking the person to talk again.
-      setError(t.networkErrorMessage);
-      setErrorKind("network");
-      setStep("error");
+      showError("network", t.networkErrorMessage);
       return;
     }
 
     if (!text || text.trim().length < 2) {
       pendingBlobRef.current = null; // nothing useful to resend
-      setError(t.silenceMessage);
-      setErrorKind("silence");
-      setStep("error");
+      showError("silence", t.silenceMessage);
       return;
     }
 
     pendingTextRef.current = text;
     setLastTranscript(text);
-    setStep("generating");
+    await runGenerate(text);
+  };
 
-    try {
-      await generateChapter(text);
-    } catch {
-      setError(t.networkErrorMessage);
-      setErrorKind("network");
-      setStep("error");
-      return;
-    }
+  const recorder = useRecorder({
+    onRecorded: (blob, { auto }) => {
+      if (auto) setNoteText(t.recordingAutoStopped);
+      void processAudio(blob);
+    },
+  });
 
+  const startRecording = async () => {
     pendingBlobRef.current = null;
     pendingTextRef.current = null;
-    setStep("done");
+    const ok = await recorder.start();
+    if (!ok) {
+      showError("mic", t.micDenied);
+      return;
+    }
+    clearError();
+    setNoteText("");
+    setStep("recording");
   };
 
   const resend = async () => {
     setError("");
     if (pendingTextRef.current) {
       // Already transcribed — resume from the generate step only.
-      setStep("generating");
-      try {
-        await generateChapter(pendingTextRef.current);
-        pendingBlobRef.current = null;
-        pendingTextRef.current = null;
-        setStep("done");
-      } catch {
-        setError(t.networkErrorMessage);
-        setErrorKind("network");
-        setStep("error");
-      }
+      await runGenerate(pendingTextRef.current);
     } else if (pendingBlobRef.current) {
       await processAudio(pendingBlobRef.current);
     }
@@ -340,59 +179,95 @@ export default function Home() {
   const discardAndRerecord = () => {
     pendingBlobRef.current = null;
     pendingTextRef.current = null;
-    setErrorKind(null);
-    setError("");
+    clearError();
     setStep("idle");
   };
 
+  // ── Picking a question from the full list ────────────────────────────────
+  // If a recording was in progress it's abandoned: jumping to a different
+  // question mid-recording means that take no longer belongs anywhere.
+  const handlePicked = useCallback(
+    async (picked: NonNullable<typeof pendingSelection>) => {
+      recorder.cancel();
+      pendingBlobRef.current = null;
+      pendingTextRef.current = null;
+      clearError();
+      setLastChapter("");
+      setStep("idle");
+      setNoteText("");
+
+      if (picked.answered) {
+        // Open it in redo mode with the saved answer shown. The current
+        // question is left alone so "현재 질문으로 돌아가기" still works.
+        try {
+          const data = await api.fetchSavedEntry(picked.id);
+          if (!data.entry) throw new Error("not found");
+          enterRedo(data.entry);
+        } catch {
+          exitRedo();
+          setNoteText(t.networkErrorMessage);
+        }
+        return;
+      }
+
+      exitRedo();
+      applyCurrentQuestion(picked, picked.stagePosition);
+      setNoteText(t.questionSelectedNote);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [recorder.cancel, t]
+  );
+
+  useEffect(() => {
+    if (!pendingSelection) return;
+    const picked = pendingSelection;
+    consumeSelection();
+    void handlePicked(picked);
+  }, [pendingSelection, consumeSelection, handlePicked]);
+
+  // ── Previous / skip ──────────────────────────────────────────────────────
   const handlePrevious = async () => {
     setLoadingPrevious(true);
     setNoteText("");
     try {
-      const res = await fetch("/api/previous-question");
-      const data = await res.json();
+      const data = await api.fetchSavedEntry();
       if (!data.entry) {
         setNoteText(t.noPreviousNote);
         return;
       }
-      setPreviousEntry(data.entry);
-      setMode("redo");
-      setStep("idle");
+      enterRedo(data.entry);
+    } catch {
+      setNoteText(t.networkErrorMessage);
     } finally {
       setLoadingPrevious(false);
     }
   };
 
   const cancelRedo = () => {
-    setMode("normal");
-    setPreviousEntry(null);
+    exitRedo();
     setStep("idle");
   };
 
   const handleSkip = async () => {
     if (!currentQuestion) return;
     setNoteText("");
-    const res = await fetch("/api/skip", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ questionId: currentQuestion.id }),
-    });
-    const data = await res.json();
-    if (!res.ok) return;
-
-    setCurrentQuestion(data.nextQuestion);
-    setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
-    setStagePosition(data.stagePosition);
-    setNoteText(t.skippedNote);
+    try {
+      const data = await api.skip(currentQuestion.id);
+      applyCurrentQuestion(data.nextQuestion, data.stagePosition);
+      setNoteText(t.skippedNote);
+    } catch {
+      setNoteText(t.networkErrorMessage);
+    }
   };
 
+  // ── Render ───────────────────────────────────────────────────────────────
   const busy = step === "transcribing" || step === "generating";
   const showResendUI = step === "error" && errorKind === "network";
 
   const statusText = (() => {
     if (step === "error") return error;
     if (step === "recording") {
-      return recordingSeconds >= WARNING_AT_SECONDS ? t.recordingTimeWarning : t.recording;
+      return recorder.seconds >= WARNING_AT_SECONDS ? t.recordingTimeWarning : t.recording;
     }
     if (step === "transcribing") return t.transcribing;
     if (step === "generating") return t.generating;
@@ -471,10 +346,10 @@ export default function Home() {
           ) : (
             <RecordButton
               step={step}
-              recordingSeconds={recordingSeconds}
+              recordingSeconds={recorder.seconds}
               statusText={statusText}
               actionLabel={micRetryActive ? t.micRetry : t.redoAction}
-              onClick={step === "recording" ? () => stopRecording() : startRecording}
+              onClick={step === "recording" ? () => recorder.stop() : startRecording}
               disabled={busy}
             />
           )}
@@ -499,10 +374,10 @@ export default function Home() {
           ) : (
             <RecordButton
               step={step}
-              recordingSeconds={recordingSeconds}
+              recordingSeconds={recorder.seconds}
               statusText={statusText}
               actionLabel={micRetryActive ? t.micRetry : t.recordAction}
-              onClick={step === "recording" ? () => stopRecording() : startRecording}
+              onClick={step === "recording" ? () => recorder.stop() : startRecording}
               disabled={(!currentQuestion && step === "idle") || busy}
             />
           )}

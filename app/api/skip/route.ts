@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/apiErrors";
 import {
   skipQuestion,
   getCurrentStageId,
@@ -11,12 +12,12 @@ import { USER_COOKIE } from "@/lib/auth";
 export async function POST(req: NextRequest) {
   const userId = req.cookies.get(USER_COOKIE)?.value;
   if (!userId) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return apiError("UNAUTHORIZED", 401);
   }
 
   const { questionId } = (await req.json()) as { questionId?: number };
   if (!questionId) {
-    return NextResponse.json({ error: "questionId가 없습니다." }, { status: 400 });
+    return apiError("INVALID_INPUT", 400);
   }
 
   const stageBefore = await getCurrentStageId(userId);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/apiErrors";
 import { registerUser, checkIpRateLimit, recordIpLoginAttempt } from "@/lib/questions";
 import { USER_COOKIE, LANG_COOKIE, DEFAULT_LANG, isValidUserId, isValidLang } from "@/lib/auth";
 
@@ -13,17 +14,14 @@ export async function POST(req: NextRequest) {
   const lock = await checkIpRateLimit(ip);
   if (lock.limited) {
     const minutes = Math.ceil((lock.retryAfterSeconds ?? 60) / 60);
-    return NextResponse.json(
-      { error: `너무 많이 시도했습니다. ${minutes}분 후 다시 시도해주세요.` },
-      { status: 429 }
-    );
+    return apiError("RATE_LIMITED", 429, { retryAfterMinutes: minutes });
   }
   await recordIpLoginAttempt(ip);
 
   const { userId, language } = (await req.json()) as { userId?: string; language?: string };
 
   if (!userId || !isValidUserId(userId)) {
-    return NextResponse.json({ error: "숫자 4자리로 입력해주세요." }, { status: 400 });
+    return apiError("INVALID_USER_ID", 400);
   }
 
   const lang = isValidLang(language) ? language : DEFAULT_LANG;

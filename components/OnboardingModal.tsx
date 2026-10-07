@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import { useLanguage } from "./LanguageProvider";
 import { IconMic, IconBook } from "./icons";
-import { STAGE_NAMES_SHORT } from "@/lib/i18n";
+import { stageShortName } from "@/lib/stages";
 
 const SEEN_KEY = "gachi_onboarding_seen_v1";
 
@@ -31,7 +31,7 @@ function AnswerIllustration() {
     <div className="flex flex-col items-center gap-3 py-2">
       <div className="w-full max-w-[280px] bg-surface border border-border rounded-2xl p-4 flex flex-col gap-2">
         <span className="text-xs font-semibold text-accent-dark">
-          {STAGE_NAMES_SHORT[lang][1]}
+          {stageShortName(lang, 1)}
         </span>
         <p className="font-bold text-text text-base leading-relaxed">
           {t.onboardingSampleQuestion}

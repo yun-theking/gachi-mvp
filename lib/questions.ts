@@ -1,35 +1,8 @@
 import { getDb } from "./db";
 import type { Lang } from "./auth";
+import { TOTAL_STAGES } from "./stages";
 
-export const TOTAL_STAGES = 10;
-
-/** Full life-stage names used as archive section headers, per language. */
-export const STAGE_NAMES: Record<Lang, Record<number, string>> = {
-  ko: {
-    1: "유년기·성장배경",
-    2: "학창시절·청년기",
-    3: "사회초년·입사/창업초기",
-    4: "성장기 커리어·도전과 실패",
-    5: "전성기·리더십과 결단",
-    6: "위기와 시련·극복",
-    7: "인간관계·은사와 동료",
-    8: "가정·결혼과 사생활",
-    9: "가치관·인생철학",
-    10: "은퇴 이후·후대에 남기는 말",
-  },
-  ja: {
-    1: "幼少期・成長背景",
-    2: "学生時代・青年期",
-    3: "社会人初期・入社/創業初期",
-    4: "成長期のキャリア・挑戦と失敗",
-    5: "全盛期・リーダーシップと決断",
-    6: "危機と試練・克服",
-    7: "人間関係・恩師と同僚",
-    8: "家庭・結婚と私生活",
-    9: "価値観・人生哲学",
-    10: "引退後・後世への言葉",
-  },
-};
+export { TOTAL_STAGES };
 
 export interface QuestionRow {
   id: number;
@@ -226,6 +199,18 @@ export async function getEntryByQuestionId(
     args: [userId, questionId],
   });
   return (result.rows[0] as unknown as EntryRow | undefined) ?? null;
+}
+
+/** This user's most recent answers, newest first — gives the AI the recent
+ * conversation flow when picking the next question. Read from the DB rather
+ * than kept in the browser, so it survives a page refresh. */
+export async function getRecentEntries(userId: string, limit: number): Promise<EntryRow[]> {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: "SELECT * FROM entries WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+    args: [userId, limit],
+  });
+  return result.rows as unknown as EntryRow[];
 }
 
 export async function getLastAnsweredEntry(userId: string): Promise<EntryRow | null> {

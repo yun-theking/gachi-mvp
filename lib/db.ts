@@ -141,11 +141,20 @@ async function migrateSchema(db: Client) {
   );
 }
 
+/**
+ * Syncs the questions table from data/question_bank.json on every startup
+ * (insert new, update changed text/stage names) so the JSON really is the
+ * source of truth — editing or regenerating the bank shows up without
+ * wiping the DB.
+ *
+ * IDs are positional (1..N in file order), and entries reference them, so
+ * when updating the bank: edit wording in place or append new questions at
+ * the very end of the file — inserting mid-file shifts every later
+ * ID. Questions removed from the end of the file are removed from the
+ * table too, unless someone has already answered them (those rows stay so
+ * their answers keep a valid reference).
+ */
 async function seedQuestions(db: Client) {
-  const result = await db.execute("SELECT COUNT(*) as count FROM questions");
-  const count = Number(result.rows[0].count as number);
-  if (count > 0) return;
-
   const bank: BankStage[] = JSON.parse(fs.readFileSync(BANK_PATH, "utf-8"));
 
   let globalId = 1;
@@ -154,7 +163,13 @@ async function seedQuestions(db: Client) {
     for (const q of stage.questions) {
       statements.push({
         sql: `INSERT INTO questions (id, life_stage_id, life_stage_ko, life_stage_ja, question_ko, question_ja)
-              VALUES (?, ?, ?, ?, ?, ?)`,
+              VALUES (?, ?, ?, ?, ?, ?)
+              ON CONFLICT(id) DO UPDATE SET
+                life_stage_id = excluded.life_stage_id,
+                life_stage_ko = excluded.life_stage_ko,
+                life_stage_ja = excluded.life_stage_ja,
+                question_ko = excluded.question_ko,
+                question_ja = excluded.question_ja`,
         args: [
           globalId++,
           stage.life_stage_id,
@@ -166,6 +181,15 @@ async function seedQuestions(db: Client) {
       });
     }
   }
+  // Only drop removed questions nobody has answered: entries reference
+  // questions(id), and deleting a referenced row would fail the whole batch
+  // wherever foreign keys are enforced (and block startup).
+  statements.push({
+    sql: `DELETE FROM questions
+          WHERE id >= ?
+            AND id NOT IN (SELECT question_id FROM entries WHERE question_id IS NOT NULL)`,
+    args: [globalId],
+  });
   await db.batch(statements, "write");
 }
 

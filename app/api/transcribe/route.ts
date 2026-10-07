@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/apiErrors";
 import OpenAI from "openai";
 import { LANG_COOKIE, DEFAULT_LANG, isValidLang } from "@/lib/auth";
 
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
     const audioFile = formData.get("audio") as File | null;
 
     if (!audioFile) {
-      return NextResponse.json({ error: "오디오 파일이 없습니다." }, { status: 400 });
+      return apiError("INVALID_INPUT", 400);
     }
 
     // Whisper requires a filename with an extension it recognises
@@ -30,9 +31,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ text: transcription.text });
   } catch (err) {
     console.error("[transcribe]", err);
-    return NextResponse.json(
-      { error: "음성 변환 중 오류가 발생했습니다." },
-      { status: 500 }
-    );
+    return apiError("TRANSCRIBE_FAILED", 500);
   }
 }

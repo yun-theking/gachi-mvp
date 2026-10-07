@@ -37,7 +37,17 @@ function LoginForm() {
         body: JSON.stringify({ userId, language: lang }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || t.loginErrorGeneric);
+      if (!res.ok) {
+        // Server sends an error code (lib/apiErrors.ts); pick the message in
+        // the language currently selected on this screen.
+        throw new Error(
+          data.error === "INVALID_USER_ID"
+            ? t.loginErrorFormat
+            : data.error === "RATE_LIMITED"
+            ? t.loginErrorRateLimited(data.retryAfterMinutes ?? 1)
+            : t.loginErrorGeneric
+        );
+      }
       // A full navigation, not router.replace(), on purpose: the client-side
       // router cache can otherwise serve an already-cached response for the
       // destination route from before login, so the freshly-set language

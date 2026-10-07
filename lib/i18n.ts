@@ -1,32 +1,5 @@
 import type { Lang } from "./auth";
 
-export const STAGE_NAMES_SHORT: Record<Lang, Record<number, string>> = {
-  ko: {
-    1: "유년기",
-    2: "학창시절",
-    3: "사회초년",
-    4: "커리어",
-    5: "리더십",
-    6: "위기극복",
-    7: "인간관계",
-    8: "가정",
-    9: "가치관",
-    10: "은퇴",
-  },
-  ja: {
-    1: "幼少期",
-    2: "学生時代",
-    3: "社会人初期",
-    4: "キャリア",
-    5: "リーダーシップ",
-    6: "危機克服",
-    7: "人間関係",
-    8: "家庭",
-    9: "価値観",
-    10: "引退後",
-  },
-};
-
 export interface Dict {
   appTagline: string;
   navInterview: string;
@@ -43,6 +16,7 @@ export interface Dict {
   loginHint2: string;
   loginErrorFormat: string;
   loginErrorGeneric: string;
+  loginErrorRateLimited: (minutes: number) => string;
   recordIdle: string;
   recordAction: string;
   redoAction: string;
@@ -123,6 +97,8 @@ const dict: Record<Lang, Dict> = {
     loginHint2: "이 번호가 곧 비밀번호예요. 다른 사람에게 알려주지 마세요.",
     loginErrorFormat: "숫자 4자리로 입력해주세요.",
     loginErrorGeneric: "알 수 없는 오류가 발생했습니다.",
+    loginErrorRateLimited: (minutes: number) =>
+      `너무 많이 시도했어요. ${minutes}분 후 다시 시도해주세요.`,
     recordIdle: "아래 버튼을 누르고\n편하게 말씀해주세요",
     recordAction: "답변 시작하기",
     redoAction: "다시 답변 시작하기",
@@ -204,6 +180,8 @@ const dict: Record<Lang, Dict> = {
     loginHint2: "この番号がそのままパスワードです。他の人に教えないでください。",
     loginErrorFormat: "数字4桁で入力してください。",
     loginErrorGeneric: "不明なエラーが発生しました。",
+    loginErrorRateLimited: (minutes: number) =>
+      `試行回数が多すぎます。${minutes}分後にもう一度お試しください。`,
     recordIdle: "下のボタンを押して\n気軽にお話しください",
     recordAction: "回答を始める",
     redoAction: "もう一度回答する",

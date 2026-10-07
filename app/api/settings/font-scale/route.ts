@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/apiErrors";
 import { FONT_SCALE_COOKIE, isValidFontScale } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   const { fontScale } = (await req.json()) as { fontScale?: string };
 
   if (!isValidFontScale(fontScale)) {
-    return NextResponse.json({ error: "Invalid font scale." }, { status: 400 });
+    return apiError("INVALID_INPUT", 400);
   }
 
   const res = NextResponse.json({ ok: true });

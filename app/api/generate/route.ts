@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/apiErrors";
 import OpenAI from "openai";
 import {
   getQuestionById,
@@ -7,8 +8,13 @@ import {
   saveEntry,
   getProgressSummary,
   getStagePosition,
+  getRecentEntries,
 } from "@/lib/questions";
 import { USER_COOKIE, LANG_COOKIE, DEFAULT_LANG, isValidLang, type Lang } from "@/lib/auth";
+
+/** How many recent answers to show the model, and how much of each. */
+const RECENT_CONTEXT_COUNT = 4;
+const RECENT_ANSWER_MAX_CHARS = 300;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -16,15 +22,21 @@ const openai = new OpenAI({
 
 const PROMPTS: Record<
   Lang,
-  { instructions: (askedText: string, candidateList: string) => string; noAnswerText: string }
+  {
+    instructions: (askedText: string, candidateList: string, recentAnswers: string) => string;
+    noAnswerText: string;
+  }
 > = {
   ko: {
     noAnswerText: "(자유 답변)",
-    instructions: (askedText, candidateList) => `당신은 시니어의 삶의 이야기를 아름다운 회고록으로 엮어주는 인터뷰 작가입니다.
+    instructions: (askedText, candidateList, recentAnswers) => `당신은 시니어의 삶의 이야기를 아름다운 회고록으로 엮어주는 인터뷰 작가입니다.
 사용자가 방금 아래 질문에 음성으로 답변했습니다.
 
 [방금 받은 질문]
 ${askedText}
+
+[최근 답변 기록 (오래된 순)]
+${recentAnswers || "(아직 없음)"}
 
 이 답변을 바탕으로 두 가지를 JSON으로 반환하세요.
 
@@ -40,11 +52,14 @@ ${candidateList || "(이 생애주기의 후보가 모두 소진되었습니다.
   },
   ja: {
     noAnswerText: "（自由回答）",
-    instructions: (askedText, candidateList) => `あなたはシニアの人生の物語を美しい回顧録に編み上げるインタビュー作家です。
+    instructions: (askedText, candidateList, recentAnswers) => `あなたはシニアの人生の物語を美しい回顧録に編み上げるインタビュー作家です。
 ユーザーがたった今、下記の質問に音声で回答しました。
 
 [たった今受けた質問]
 ${askedText}
+
+[最近の回答履歴（古い順）]
+${recentAnswers || "（まだありません）"}
 
 この回答をもとに、次の2つをJSONで返してください。
 
@@ -64,19 +79,18 @@ export async function POST(req: NextRequest) {
   try {
     const userId = req.cookies.get(USER_COOKIE)?.value;
     if (!userId) {
-      return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+      return apiError("UNAUTHORIZED", 401);
     }
     const langCookie = req.cookies.get(LANG_COOKIE)?.value;
     const lang: Lang = isValidLang(langCookie) ? langCookie : DEFAULT_LANG;
 
-    const { text, questionId, history } = (await req.json()) as {
+    const { text, questionId } = (await req.json()) as {
       text: string;
       questionId?: number;
-      history?: { role: "user" | "assistant"; content: string }[];
     };
 
     if (!text?.trim()) {
-      return NextResponse.json({ error: "텍스트가 없습니다." }, { status: 400 });
+      return apiError("INVALID_INPUT", 400);
     }
 
     const askedQuestion = questionId ? await getQuestionById(questionId) : undefined;
@@ -100,17 +114,28 @@ export async function POST(req: NextRequest) {
       .map((q) => `- id:${q.id} "${lang === "ja" ? q.question_ja : q.question_ko}"`)
       .join("\n");
 
-    const systemPrompt = prompt.instructions(askedText, candidateList);
+    // Recent conversation flow, read from the DB (not sent by the browser),
+    // so it survives a page refresh. Excludes the question being answered
+    // now, which matters when re-answering an older question.
+    const recent = (await getRecentEntries(userId, RECENT_CONTEXT_COUNT + 1))
+      .filter((e) => e.question_id !== (questionId ?? null))
+      .slice(0, RECENT_CONTEXT_COUNT)
+      .reverse();
+    const recentAnswers = recent
+      .map((e) => {
+        const q = lang === "ja" && e.question_ja ? e.question_ja : e.question_ko;
+        const a = e.transcript.length > RECENT_ANSWER_MAX_CHARS
+          ? e.transcript.slice(0, RECENT_ANSWER_MAX_CHARS) + "…"
+          : e.transcript;
+        return `- Q: ${q}\n  A: ${a}`;
+      })
+      .join("\n");
+
+    const systemPrompt = prompt.instructions(askedText, candidateList, recentAnswers);
 
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
       { role: "system", content: systemPrompt },
     ];
-
-    if (history && history.length > 0) {
-      for (const msg of history.slice(-8)) {
-        messages.push({ role: msg.role, content: msg.content });
-      }
-    }
 
     messages.push({ role: "user", content: text });
 
@@ -172,9 +197,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("[generate]", err);
-    return NextResponse.json(
-      { error: "회고록 생성 중 오류가 발생했습니다." },
-      { status: 500 }
-    );
+    return apiError("GENERATE_FAILED", 500);
   }
 }

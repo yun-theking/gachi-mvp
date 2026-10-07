@@ -1,7 +1,7 @@
 "use client";
 
 import { useLanguage } from "./LanguageProvider";
-import { STAGE_NAMES_SHORT } from "@/lib/i18n";
+import { stageShortName } from "@/lib/stages";
 
 interface Props {
   currentStageId: number | null; // null = all done
@@ -25,7 +25,7 @@ export default function StageProgress({ currentStageId, stagePosition }: Props) 
   return (
     <div className="w-full flex flex-col gap-2">
       <p className="text-sm text-text-dim">
-        {t.questionCountLabel(position, total, STAGE_NAMES_SHORT[lang][currentStageId])}
+        {t.questionCountLabel(position, total, stageShortName(lang, currentStageId))}
       </p>
       <div className="w-full h-2 rounded-full bg-surface2 overflow-hidden">
         <div

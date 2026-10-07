@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
-import { getAllEntries, getProgressSummary, TOTAL_STAGES, STAGE_NAMES } from "@/lib/questions";
+import { getAllEntries, getProgressSummary } from "@/lib/questions";
+import { TOTAL_STAGES, stageName } from "@/lib/stages";
 import { USER_COOKIE, LANG_COOKIE, DEFAULT_LANG, isValidLang } from "@/lib/auth";
 import { getDict } from "@/lib/i18n";
 import ChapterPanel from "@/components/ChapterPanel";
@@ -50,7 +51,7 @@ export default async function ArchivePage() {
             .map((stageId) => (
               <section key={stageId} className="flex flex-col gap-4">
                 <h2 className="font-serif text-lg text-accent-dark border-b border-border pb-2">
-                  {stageId}. {STAGE_NAMES[lang][stageId]}
+                  {stageId}. {stageName(lang, stageId)}
                 </h2>
                 {byStage.get(stageId)!.map((entry) => (
                   <ChapterPanel
