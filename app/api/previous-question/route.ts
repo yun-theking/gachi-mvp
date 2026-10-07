@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLastAnsweredEntry, getStagePosition, getQuestionById } from "@/lib/questions";
+import {
+  getLastAnsweredEntry,
+  getEntryByQuestionId,
+  getStagePosition,
+  getQuestionById,
+} from "@/lib/questions";
 import { USER_COOKIE } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
@@ -8,7 +13,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
-  const entry = await getLastAnsweredEntry(userId);
+  // ?questionId=N reopens that specific answered question (from the full
+  // question list); without it, falls back to the most recent answer
+  // (the existing "이전 질문" button).
+  const questionIdParam = req.nextUrl.searchParams.get("questionId");
+  const questionId = questionIdParam ? Number(questionIdParam) : null;
+  const entry =
+    questionId !== null && Number.isInteger(questionId)
+      ? await getEntryByQuestionId(userId, questionId)
+      : await getLastAnsweredEntry(userId);
   if (!entry || entry.question_id === null) {
     return NextResponse.json({ entry: null, stagePosition: null });
   }

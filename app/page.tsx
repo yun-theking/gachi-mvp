@@ -103,19 +103,41 @@ export default function Home() {
     pendingBlobRef.current = null;
     pendingTextRef.current = null;
 
-    setMode("normal");
-    setPreviousEntry(null);
     setErrorKind(null);
     setError("");
     setLastChapter("");
     setStep("idle");
+    setNoteText("");
 
-    setCurrentQuestion(pendingSelection);
-    setCurrentStageId(pendingSelection.life_stage_id);
-    setStagePosition(pendingSelection.stagePosition);
-    setNoteText(t.questionSelectedNote);
-
+    const picked = pendingSelection;
     consumeSelection();
+
+    if (picked.answered) {
+      // Already answered: open it in redo mode with the saved answer shown,
+      // same screen the "이전 질문" button uses. The current question
+      // pointer is left alone so "현재 질문으로 돌아가기" still works.
+      (async () => {
+        try {
+          const res = await fetch(`/api/previous-question?questionId=${picked.id}`);
+          const data = await res.json();
+          if (!data.entry) throw new Error("not found");
+          setPreviousEntry(data.entry);
+          setMode("redo");
+        } catch {
+          setMode("normal");
+          setPreviousEntry(null);
+          setNoteText(t.networkErrorMessage);
+        }
+      })();
+      return;
+    }
+
+    setMode("normal");
+    setPreviousEntry(null);
+    setCurrentQuestion(picked);
+    setCurrentStageId(picked.life_stage_id);
+    setStagePosition(picked.stagePosition);
+    setNoteText(t.questionSelectedNote);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingSelection]);
 
@@ -219,19 +241,21 @@ export default function Home() {
     setLastChapter(data.chapter);
 
     if (mode === "redo") {
-      // Redoing an old question doesn't move the current pointer — the API
-      // returns the same still-current question, so just resync state and
-      // hop back to the normal flow.
+      // Re-answering an already-answered question only overwrites that
+      // answer. Keep whatever question the person was on before (which may
+      // be one they hand-picked from the list) instead of jumping to the
+      // API's suggested next question, then hop back to the normal flow.
       setNoteText(t.redoSavedNote);
       setMode("normal");
       setPreviousEntry(null);
-    } else if (data.stageAdvanced) {
-      setNoteText(t.stageAdvancedNote);
+    } else {
+      if (data.stageAdvanced) {
+        setNoteText(t.stageAdvancedNote);
+      }
+      setCurrentQuestion(data.nextQuestion);
+      setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
+      setStagePosition(data.stagePosition);
     }
-
-    setCurrentQuestion(data.nextQuestion);
-    setCurrentStageId(data.nextQuestion?.life_stage_id ?? null);
-    setStagePosition(data.stagePosition);
 
     setHistory((prev) => [
       ...prev,

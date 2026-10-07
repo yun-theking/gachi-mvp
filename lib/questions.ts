@@ -214,6 +214,20 @@ export async function getAllEntries(userId: string): Promise<EntryRow[]> {
 }
 
 /** Most recently answered entry — this is what the "이전 질문" button surfaces. */
+/** This user's saved answer for one specific question, if any — used to
+ * reopen any already-answered question for re-answering from the list. */
+export async function getEntryByQuestionId(
+  userId: string,
+  questionId: number
+): Promise<EntryRow | null> {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: "SELECT * FROM entries WHERE user_id = ? AND question_id = ? LIMIT 1",
+    args: [userId, questionId],
+  });
+  return (result.rows[0] as unknown as EntryRow | undefined) ?? null;
+}
+
 export async function getLastAnsweredEntry(userId: string): Promise<EntryRow | null> {
   const db = await getDb();
   const result = await db.execute({

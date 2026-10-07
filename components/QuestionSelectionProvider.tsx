@@ -9,6 +9,8 @@ import type { StagePosition } from "@/lib/questions";
  * picking a question doesn't need an extra round trip. */
 export interface SelectedQuestion extends BankQuestion {
   stagePosition: StagePosition;
+  /** Already answered: opening it re-answers (overwrites) that answer. */
+  answered: boolean;
 }
 
 interface QuestionSelectionContextValue {

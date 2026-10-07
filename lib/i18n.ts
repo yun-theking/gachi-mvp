@@ -83,6 +83,7 @@ export interface Dict {
   questionListTitle: string;
   questionListSubtitle: string;
   questionListAnsweredBadge: string;
+  questionListRedoHint: string;
   questionListProgress: (answered: number, total: number) => string;
   questionListClose: string;
   questionSelectedNote: string;
@@ -144,11 +145,11 @@ const dict: Record<Lang, Dict> = {
     previousQuestion: "이전 질문",
     skipQuestion: "건너뛰기",
     backToCurrent: "현재 질문으로 돌아가기",
-    redoHeading: "이전 질문에 다시 답변하기",
+    redoHeading: "답변 다시 하기",
     previousAnswerLabel: "이전 답변",
     justAnsweredLabel: "방금 남긴 이야기",
     chapterLabelDefault: "회고록 챕터",
-    redoSavedNote: "이전 답변이 수정됐어요",
+    redoSavedNote: "답변이 수정됐어요",
     skippedNote: "질문을 건너뛰었어요",
     noPreviousNote: "아직 답변한 질문이 없어요",
     stageAdvancedNote: "다음 생애주기로 넘어갑니다 →",
@@ -164,8 +165,9 @@ const dict: Record<Lang, Dict> = {
     settingsBody: "앱 환경을 설정할 수 있어요.",
     questionListButton: "전체 질문 보기",
     questionListTitle: "전체 질문 목록",
-    questionListSubtitle: "원하는 질문을 골라 바로 답변할 수 있어요",
+    questionListSubtitle: "원하는 질문을 골라 답변하고, 답변완료된 질문도 눌러서 다시 답변할 수 있어요",
     questionListAnsweredBadge: "답변완료",
+    questionListRedoHint: "눌러서 다시 답변하기",
     questionListProgress: (answered: number, total: number) =>
       `${answered}/${total} 답변완료`,
     questionListClose: "닫기",
@@ -226,11 +228,11 @@ const dict: Record<Lang, Dict> = {
     previousQuestion: "前の質問",
     skipQuestion: "スキップ",
     backToCurrent: "現在の質問に戻る",
-    redoHeading: "前の質問にもう一度答える",
+    redoHeading: "回答をやり直す",
     previousAnswerLabel: "前回の回答",
     justAnsweredLabel: "たった今残した話",
     chapterLabelDefault: "回顧録の章",
-    redoSavedNote: "前回の回答を修正しました",
+    redoSavedNote: "回答を修正しました",
     skippedNote: "質問をスキップしました",
     noPreviousNote: "まだ回答した質問がありません",
     stageAdvancedNote: "次のライフステージに進みます →",
@@ -246,8 +248,9 @@ const dict: Record<Lang, Dict> = {
     settingsBody: "アプリの環境を設定できます。",
     questionListButton: "全質問を見る",
     questionListTitle: "全質問リスト",
-    questionListSubtitle: "好きな質問を選んですぐに答えられます",
+    questionListSubtitle: "好きな質問を選んで回答でき、回答済みの質問も押してやり直せます",
     questionListAnsweredBadge: "回答済み",
+    questionListRedoHint: "押して回答をやり直す",
     questionListProgress: (answered: number, total: number) =>
       `${answered}/${total} 回答済み`,
     questionListClose: "閉じる",

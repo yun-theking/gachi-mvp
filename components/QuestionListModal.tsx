@@ -82,7 +82,6 @@ export default function QuestionListModal() {
   if (!isListOpen || !mounted) return null;
 
   const handlePick = (stageList: QuestionApiRow[], q: QuestionApiRow) => {
-    if (q.answered) return;
     const position = stageList.findIndex((x) => x.id === q.id) + 1;
     selectQuestion({
       id: q.id,
@@ -92,6 +91,7 @@ export default function QuestionListModal() {
       question_ko: q.question_ko,
       question_ja: q.question_ja,
       stagePosition: { position, total: stageList.length },
+      answered: q.answered,
     });
   };
 
@@ -144,14 +144,20 @@ export default function QuestionListModal() {
                       <button
                         key={q.id}
                         onClick={() => handlePick(list, q)}
-                        disabled={q.answered}
                         className={`text-left w-full rounded-2xl border px-4 py-4 flex items-start gap-3 transition-colors ${
                           q.answered
-                            ? "border-border bg-surface2/60 text-text-dim cursor-default"
+                            ? "border-border bg-surface2/60 text-text-dim hover:border-accent hover:bg-surface2"
                             : "border-border bg-surface text-text hover:border-accent hover:bg-surface2"
                         }`}
                       >
-                        <span className="flex-1 text-base leading-relaxed">{questionText}</span>
+                        <span className="flex-1 flex flex-col gap-1">
+                          <span className="text-base leading-relaxed">{questionText}</span>
+                          {q.answered && (
+                            <span className="text-sm text-accent-dark font-medium">
+                              {t.questionListRedoHint}
+                            </span>
+                          )}
+                        </span>
                         {q.answered && (
                           <span className="shrink-0 flex items-center gap-1 text-xs font-semibold text-accent-dark bg-accent/10 rounded-full px-2.5 py-1">
                             <IconCheck className="w-3.5 h-3.5" />
