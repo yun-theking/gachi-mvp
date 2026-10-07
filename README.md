@@ -42,7 +42,7 @@ lib/questions.ts          생애주기/질문 선택 헬퍼
 data/question_bank.json   질문뱅크 원본 (106개, 한/일 병기) — 여기가 source of truth
 ```
 
-레거시/실험 파일(건드릴 필요 없음): `index.html`, `server.py`, `share.html` — 초기 vanilla JS 프로토타입. `gap_question_demo.py`, `s2s_latency_test.py` — 리서치용 스크립트.
+레거시/실험 파일은 `legacy/` 폴더로 모아뒀어요 (앱 동작과 무관, 건드릴 필요 없음): `index.html`, `server.py`, `share.html` — 초기 vanilla JS 프로토타입. `gap_question_demo.py`, `s2s_latency_test.py` — 리서치용 스크립트.
 
 ## 디자인 시스템
 

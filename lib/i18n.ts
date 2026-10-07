@@ -28,14 +28,12 @@ export const STAGE_NAMES_SHORT: Record<Lang, Record<number, string>> = {
 };
 
 export interface Dict {
-  appName: string;
   appTagline: string;
   navInterview: string;
   navArchive: string;
   navSettings: string;
   myNumber: string;
   switchNumber: string;
-  loginTitle: string;
   loginSubtitle: string;
   loginPlaceholder: string;
   loginButton: string;
@@ -110,14 +108,12 @@ export interface Dict {
 
 const dict: Record<Lang, Dict> = {
   ko: {
-    appName: "가치",
     appTagline: "닛케이「私の履歴書」에서 영감을 받은 106개 질문으로, 목소리로 답하며 완성하는 나만의 회고록입니다.",
     navInterview: "인터뷰",
     navArchive: "내 회고록",
     navSettings: "설정",
     myNumber: "번호",
     switchNumber: "다른 번호로 입장",
-    loginTitle: "가치",
     loginSubtitle: "나만의 번호를 입력하고 입장해주세요",
     loginPlaceholder: "예: 1234",
     loginButton: "입장하기",
@@ -193,14 +189,12 @@ const dict: Record<Lang, Dict> = {
     onboardingSampleChapter: "그 시절, 나는...",
   },
   ja: {
-    appName: "가치",
     appTagline: "日経「私の履歴書」に着想を得た106の質問に、声で答えて完成させる自分だけの回顧録です。",
     navInterview: "インタビュー",
     navArchive: "マイ回顧録",
     navSettings: "設定",
     myNumber: "番号",
     switchNumber: "別の番号で入る",
-    loginTitle: "가치",
     loginSubtitle: "ご自身の番号を入力して入室してください",
     loginPlaceholder: "例: 1234",
     loginButton: "入室する",
@@ -277,7 +271,6 @@ const dict: Record<Lang, Dict> = {
   },
 };
 
-export type DictKey = keyof Dict;
 
 export function getDict(lang: Lang): Dict {
   return dict[lang];

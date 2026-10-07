@@ -260,7 +260,16 @@ export default function Home() {
     setHistory((prev) => [
       ...prev,
       { role: "user", content: text },
-      { role: "assistant", content: JSON.stringify(data) },
+      // Only what the model itself produced, in its own output shape —
+      // not the whole API response (progress counts, stage position, etc.),
+      // which is UI bookkeeping that just costs tokens and adds noise.
+      {
+        role: "assistant",
+        content: JSON.stringify({
+          chapter: data.chapter,
+          next_question_id: data.nextQuestion?.id ?? null,
+        }),
+      },
     ]);
   };
 

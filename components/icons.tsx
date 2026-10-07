@@ -105,20 +105,6 @@ export function IconChevronLeft({ className }: IconProps) {
   );
 }
 
-export function IconSkip({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path
-        d="M6 5v14l10-7L6 5Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      <path d="M18 5v14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 export function IconClose({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
