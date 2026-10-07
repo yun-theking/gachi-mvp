@@ -40,7 +40,13 @@ export async function fetchNextQuestion() {
     stagePosition: StagePos | null;
     progress?: { totalAnswered: number; totalQuestions: number };
     needsFields?: boolean;
+    showOnboarding?: boolean;
   }>(await fetch("/api/next-question"));
+}
+
+/** Records (on the account) that the tutorial was finished or skipped. */
+export async function markOnboardingSeen() {
+  await getJson<{ ok: true }>(await fetch("/api/settings/onboarding", { method: "POST" }));
 }
 
 export async function transcribe(blob: Blob): Promise<string> {

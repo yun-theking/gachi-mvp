@@ -138,3 +138,28 @@ describe("recent answers (AI context, '이전 질문')", () => {
     expect(await getLastAnsweredEntry(user)).toBeNull();
   });
 });
+
+describe("tutorial (per account, not per device)", () => {
+  it("shows for a brand-new account, and not again once seen", async () => {
+    const { shouldShowOnboarding, markOnboardingSeen } = await import("@/lib/questions");
+    const user = await newUser();
+    expect(await shouldShowOnboarding(user)).toBe(true);
+    await markOnboardingSeen(user);
+    expect(await shouldShowOnboarding(user)).toBe(false);
+  });
+
+  it("each new account gets it even after another account saw it", async () => {
+    const { shouldShowOnboarding, markOnboardingSeen } = await import("@/lib/questions");
+    const first = await newUser();
+    await markOnboardingSeen(first);
+    const second = await newUser();
+    expect(await shouldShowOnboarding(second)).toBe(true);
+  });
+
+  it("doesn't show for an account that already has answers", async () => {
+    const { shouldShowOnboarding } = await import("@/lib/questions");
+    const user = await newUser();
+    await answer(user, 10101);
+    expect(await shouldShowOnboarding(user)).toBe(false);
+  });
+});

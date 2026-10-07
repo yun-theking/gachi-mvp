@@ -28,7 +28,7 @@ export default function Home() {
   const [currentStageId, setCurrentStageId] = useState<number | null>(1);
   const [stagePosition, setStagePosition] = useState<StagePos | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [hasAnsweredAny, setHasAnsweredAny] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const [lastTranscript, setLastTranscript] = useState("");
   const [lastChapter, setLastChapter] = useState("");
@@ -85,7 +85,7 @@ export default function Home() {
           return;
         }
         applyCurrentQuestion(data.nextQuestion, data.stagePosition);
-        setHasAnsweredAny((data.progress?.totalAnswered ?? 0) > 0);
+        setShowOnboarding(!!data.showOnboarding);
       })
       .catch(() => setNoteText(t.networkErrorMessage))
       .finally(() => setInitialLoading(false));
@@ -96,7 +96,6 @@ export default function Home() {
   const generateChapter = async (text: string) => {
     const data = await api.generate(text, activeQuestionId);
     setLastChapter(data.chapter);
-    setHasAnsweredAny(true);
 
     if (mode === "redo") {
       // Re-answering only overwrites that answer. Keep whatever question the
@@ -317,7 +316,15 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center gap-5 px-4 py-6">
-      {!initialLoading && <OnboardingModal hasAnsweredAny={hasAnsweredAny} />}
+      {showOnboarding && (
+        <OnboardingModal
+          onFinish={() => {
+            setShowOnboarding(false);
+            // Best-effort: if this fails, the tutorial just shows once more next visit.
+            api.markOnboardingSeen().catch(() => {});
+          }}
+        />
+      )}
       {mode === "redo" ? (
         <>
           <div className="w-full max-w-xl flex items-center gap-2">

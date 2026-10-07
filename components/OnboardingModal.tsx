@@ -7,8 +7,6 @@ import { useLanguage } from "./LanguageProvider";
 import { IconMic, IconBook } from "./icons";
 import { stageShortName } from "@/lib/stages";
 
-const SEEN_KEY = "gachi_onboarding_seen_v1";
-
 /** Step 1 illustration: the app's own mic button, at rest — establishes the
  * one gesture ("press this, then talk") before anything else is explained. */
 function WelcomeIllustration() {
@@ -69,49 +67,27 @@ function ArchiveIllustration() {
   );
 }
 
-export default function OnboardingModal({ hasAnsweredAny }: { hasAnsweredAny: boolean }) {
+/** First-visit tutorial. Whether to show it is decided per account by the
+ * server (see shouldShowOnboarding); the parent only mounts this when it
+ * should appear, and onFinish records it as seen. */
+export default function OnboardingModal({ onFinish }: { onFinish: () => void }) {
   const { dict: t } = useLanguage();
   const [mounted, setMounted] = useState(false);
-  const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
-  useEffect(() => {
-    setMounted(true);
-
-    // Already has at least one answered question — definitely not this
-    // person's first visit (covers a new browser/device on the same
-    // account too), so skip the tutorial without even checking storage.
-    if (hasAnsweredAny) return;
-
-    try {
-      if (!window.localStorage.getItem(SEEN_KEY)) {
-        setOpen(true);
-      }
-    } catch {
-      // localStorage unavailable (e.g. blocked storage) — just skip the
-      // tutorial rather than showing it every visit.
-    }
-  }, [hasAnsweredAny]);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!open) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prevOverflow;
     };
-  }, [open]);
+  }, []);
 
-  const finish = () => {
-    try {
-      window.localStorage.setItem(SEEN_KEY, "1");
-    } catch {
-      // Best-effort: worst case the tutorial reappears next visit.
-    }
-    setOpen(false);
-  };
+  const finish = onFinish;
 
-  if (!mounted || !open) return null;
+  if (!mounted) return null;
 
   const steps = [
     { Illustration: WelcomeIllustration, title: t.onboardingStep1Title, body: t.onboardingStep1Body },

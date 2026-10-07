@@ -147,6 +147,10 @@ async function migrateSchema(db: Client) {
   const userColNames = (await db.execute("PRAGMA table_info(users)")).rows.map(
     (r) => (r as unknown as { name: string }).name
   );
+  if (!userColNames.includes("onboarding_seen")) {
+    // Tutorial shown/skipped for this account (per account, not per device).
+    await db.execute("ALTER TABLE users ADD COLUMN onboarding_seen INTEGER NOT NULL DEFAULT 0");
+  }
   if (!userColNames.includes("fields")) {
     // Comma-separated field codes. NULL = not asked yet, "" = chose none.
     await db.execute("ALTER TABLE users ADD COLUMN fields TEXT");

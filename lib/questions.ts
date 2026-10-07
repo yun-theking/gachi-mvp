@@ -45,6 +45,28 @@ export async function setUserFields(userId: string, fields: string[]) {
   });
 }
 
+/** Show the tutorial only on an account's first visit: it hasn't been
+ * seen/skipped on this account yet, and the account has no answers at all
+ * (old-bank answers included, so early testers don't get it again).
+ * Stored per account, so a new account on a shared device still sees it. */
+export async function shouldShowOnboarding(userId: string): Promise<boolean> {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: `SELECT u.onboarding_seen AS seen,
+                 (SELECT COUNT(*) FROM entries e WHERE e.user_id = u.id) AS answers
+          FROM users u WHERE u.id = ?`,
+    args: [userId],
+  });
+  const row = result.rows[0] as unknown as { seen: number; answers: number } | undefined;
+  if (!row) return false;
+  return Number(row.seen) === 0 && Number(row.answers) === 0;
+}
+
+export async function markOnboardingSeen(userId: string) {
+  const db = await getDb();
+  await db.execute({ sql: "UPDATE users SET onboarding_seen = 1 WHERE id = ?", args: [userId] });
+}
+
 /** Section ids this person sees, in interview order (common stages, then
  * their picked fields). */
 export async function getVisibleStageIds(userId: string): Promise<number[]> {
