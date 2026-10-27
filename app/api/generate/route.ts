@@ -9,14 +9,21 @@ import {
   getProgressSummary,
   getStagePosition,
   getRecentEntries,
+  getEntryByQuestionId,
   toClientQuestion,
   getQuestionNumber,
 } from "@/lib/questions";
 import { USER_COOKIE, LANG_COOKIE, DEFAULT_LANG, isValidLang, type Lang } from "@/lib/auth";
-import { chapterPrompt, chapterMaxTokens } from "@/lib/prompts";
+import {
+  chapterPrompt,
+  chapterMaxTokens,
+  parseChapterResult,
+  appendFollowUp,
+  MAX_FOLLOW_UPS,
+} from "@/lib/prompts";
 
 /** How many recent answers to show the model, and how much of each. */
-const RECENT_CONTEXT_COUNT = 4;
+const RECENT_CONTEXT_COUNT = 6;
 const RECENT_ANSWER_MAX_CHARS = 300;
 
 const openai = new OpenAI({
@@ -32,6 +39,11 @@ function toSeconds(v: unknown): number | null {
   return Math.min(Math.round(v), 24 * 60 * 60);
 }
 
+function sumSeconds(previous: number | null | undefined, now: number | null): number | null {
+  if (previous === null || previous === undefined) return now;
+  return Number(previous) + (now ?? 0);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const userId = req.cookies.get(USER_COOKIE)?.value;
@@ -41,18 +53,37 @@ export async function POST(req: NextRequest) {
     const langCookie = req.cookies.get(LANG_COOKIE)?.value;
     const lang: Lang = isValidLang(langCookie) ? langCookie : DEFAULT_LANG;
 
-    const { text, questionId, recordingSeconds, timeOnQuestionSeconds } = (await req.json()) as {
-      text: string;
-      questionId?: number;
-      recordingSeconds?: unknown;
-      timeOnQuestionSeconds?: unknown;
-    };
+    const { text, questionId, recordingSeconds, timeOnQuestionSeconds, followUp, allowFollowUp } =
+      (await req.json()) as {
+        text: string;
+        questionId?: number;
+        recordingSeconds?: unknown;
+        timeOnQuestionSeconds?: unknown;
+        /** Answering a follow-up: the question asked and how many have been answered so far (1-based). */
+        followUp?: { question?: unknown; index?: unknown };
+        /** False when re-answering an old question (no follow-ups then). */
+        allowFollowUp?: boolean;
+      };
 
     if (!text?.trim()) {
       return apiError("INVALID_INPUT", 400);
     }
 
     const askedQuestion = questionId ? await getQuestionById(questionId) : undefined;
+
+    // A follow-up answer is added to this question's saved answer and the
+    // chapter is rewritten from the combined text.
+    const followUpQuestion =
+      typeof followUp?.question === "string" && followUp.question.trim() ? followUp.question.trim() : null;
+    const followUpIndex =
+      typeof followUp?.index === "number" && Number.isInteger(followUp.index) ? followUp.index : 0;
+    const previousEntry =
+      followUpQuestion && askedQuestion ? await getEntryByQuestionId(userId, askedQuestion.id) : null;
+    const fullText = previousEntry
+      ? appendFollowUp(lang, previousEntry.transcript, followUpQuestion!, text)
+      : text;
+    const followUpsLeft =
+      allowFollowUp === false || !askedQuestion ? 0 : Math.max(0, MAX_FOLLOW_UPS - followUpIndex);
     const lifeStageId =
       askedQuestion?.life_stage_id ?? (await getCurrentStageId(userId)) ?? 1;
 
@@ -93,28 +124,28 @@ export async function POST(req: NextRequest) {
       asked: askedText,
       recent: recentAnswers,
       candidates: candidateList,
+      followUpsLeft,
     });
 
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
       { role: "system", content: systemPrompt },
     ];
 
-    messages.push({ role: "user", content: text });
+    messages.push({ role: "user", content: fullText });
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages,
       response_format: { type: "json_object" },
-      max_tokens: chapterMaxTokens(text),
+      max_tokens: chapterMaxTokens(fullText),
       // Low temperature: stick to what was said rather than embellish.
       temperature: 0.3,
     });
 
-    const raw = response.choices[0].message.content ?? "{}";
-    const parsed = JSON.parse(raw) as {
-      chapter: string;
-      next_question_id: number | null;
-    };
+    const result = parseChapterResult(
+      JSON.parse(response.choices[0].message.content ?? "{}"),
+      followUpsLeft
+    );
 
     // Persist this turn now that we have the generated chapter. Store both
     // language versions of the question text regardless of which language
@@ -125,10 +156,14 @@ export async function POST(req: NextRequest) {
       lifeStageId,
       questionKo: askedKo,
       questionJa: askedJa,
-      transcript: text,
-      chapter: parsed.chapter,
-      recordingSeconds: toSeconds(recordingSeconds),
-      timeOnQuestionSeconds: toSeconds(timeOnQuestionSeconds),
+      transcript: fullText,
+      chapter: result.chapter,
+      // Follow-ups add to the time already spent on this question.
+      recordingSeconds: sumSeconds(previousEntry?.recording_seconds, toSeconds(recordingSeconds)),
+      timeOnQuestionSeconds: sumSeconds(
+        previousEntry?.time_on_question_seconds,
+        toSeconds(timeOnQuestionSeconds)
+      ),
     });
 
     // Resolve the actual next question. Recompute *after* saving, since saving just
@@ -138,11 +173,15 @@ export async function POST(req: NextRequest) {
     if (stageAfter !== null) {
       const pool = await getRemainingQuestions(userId, stageAfter);
       nextQuestion =
-        pool.find((q) => q.id === parsed.next_question_id) ?? pool[0] ?? null;
+        pool.find((q) => q.id === result.nextQuestionId) ?? pool[0] ?? null;
     }
 
     return NextResponse.json({
-      chapter: parsed.chapter,
+      chapter: result.chapter,
+      transcript: fullText,
+      reaction: result.reaction,
+      followUp: result.followUp,
+      bridge: result.bridge,
       nextQuestion: nextQuestion
         ? toClientQuestion(nextQuestion, await getQuestionNumber(userId, nextQuestion.id))
         : null,

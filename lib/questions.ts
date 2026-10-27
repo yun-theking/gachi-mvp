@@ -21,6 +21,9 @@ export interface EntryRow {
   transcript: string;
   chapter: string;
   created_at: string;
+  recording_seconds?: number | null;
+  time_on_question_seconds?: number | null;
+  answer_chars?: number | null;
 }
 
 export interface StagePosition {

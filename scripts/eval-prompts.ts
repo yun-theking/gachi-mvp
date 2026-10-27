@@ -119,7 +119,7 @@ async function main() {
       await chat(reviewPrompt(s.lang, s.question, ""), s.answer, chapterMaxTokens(s.answer), 0)
     );
     const next = await chat(
-      chapterPrompt(s.lang, { asked: s.question, recent: "", candidates: "" }),
+      chapterPrompt(s.lang, { asked: s.question, recent: "", candidates: "", followUpsLeft: 3 }),
       review.text,
       chapterMaxTokens(review.text),
       0.3
@@ -142,6 +142,8 @@ async function main() {
       "",
       `### 이후 (${String(next.chapter ?? "").length}자, 답변 대비 ${ratio(String(next.chapter ?? ""))}배)`,
       String(next.chapter ?? ""),
+      "",
+      `맞장구: ${next.reaction ?? "-"} / 꼬리질문: ${next.follow_up ?? "-"}`,
       styleIssues(s.lang, String(next.chapter ?? "")).length
         ? `\n⚠ 문체 섞임: ${styleIssues(s.lang, String(next.chapter ?? "")).join(", ")}`
         : "",

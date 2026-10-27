@@ -10,6 +10,14 @@ export interface StagePos {
 
 export interface GenerateResult {
   chapter: string;
+  /** The full saved answer (earlier answer + follow-ups). */
+  transcript: string;
+  /** Short aizuchi-style reaction to what was just said. */
+  reaction: string | null;
+  /** A follow-up question about the same story, if something's missing. */
+  followUp: string | null;
+  /** Note shown with the next question when it may overlap an earlier story. */
+  bridge: string | null;
   nextQuestion: BankQuestion | null;
   stagePosition: StagePos | null;
   stageAdvanced: boolean;
@@ -81,13 +89,14 @@ export interface AnswerMetrics {
 export async function generate(
   text: string,
   questionId: number | undefined,
-  metrics: AnswerMetrics | null
+  metrics: AnswerMetrics | null,
+  options: { followUp?: { question: string; index: number }; allowFollowUp: boolean }
 ) {
   return getJson<GenerateResult>(
     await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, questionId, ...metrics }),
+      body: JSON.stringify({ text, questionId, ...metrics, ...options }),
     })
   );
 }

@@ -6,16 +6,26 @@ import QuestionCard, { type BankQuestion } from "@/components/QuestionCard";
 import ChapterPanel from "@/components/ChapterPanel";
 import StageProgress from "@/components/StageProgress";
 import QuestionActionsRow from "@/components/QuestionActionsRow";
-import { IconChevronLeft, IconCheck } from "@/components/icons";
+import { IconChevronLeft, IconCheck, IconSpeaker } from "@/components/icons";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useQuestionSelection } from "@/components/QuestionSelectionProvider";
 import OnboardingModal from "@/components/OnboardingModal";
 import TranscriptReviewPanel from "@/components/TranscriptReviewPanel";
 import { useRecorder, WARNING_AT_SECONDS } from "@/hooks/useRecorder";
+import { speak, stopSpeaking, readAloudEnabled } from "@/hooks/useSpeech";
 import * as api from "@/lib/interviewApi";
 import type { SavedEntry, StagePos } from "@/lib/interviewApi";
 
 type ErrorKind = "mic" | "network" | "silence" | null;
+
+interface NextQuestion {
+  q: BankQuestion | null;
+  pos: StagePos | null;
+  stageAdvanced: boolean;
+  bridge: string | null;
+}
+
+const MAX_FOLLOW_UPS = 3;
 
 export default function Home() {
   const { lang, dict: t } = useLanguage();
@@ -41,6 +51,12 @@ export default function Home() {
   const [reviewText, setReviewText] = useState("");
   const chapterRef = useRef<HTMLDivElement>(null);
 
+  // Follow-up questions about the same story (up to MAX_FOLLOW_UPS). While
+  // one is open, the next bank question waits in pendingNext.
+  const [followUp, setFollowUp] = useState<{ question: string; index: number } | null>(null);
+  const [pendingNext, setPendingNext] = useState<NextQuestion | null>(null);
+  const [reaction, setReaction] = useState("");
+
   // Redo mode: re-answering an already-answered question (the most recent
   // one via "이전 질문", or any one picked from the full question list).
   const [mode, setMode] = useState<"normal" | "redo">("normal");
@@ -56,11 +72,13 @@ export default function Home() {
   const activeQuestionId =
     mode === "redo" ? previousEntry?.questionId : currentQuestion?.id;
 
-  // When the question now on screen first appeared — for "time on question".
+  // When the question (or follow-up) now on screen first appeared — for
+  // "time on question". Follow-ups restart it, since the server adds each
+  // follow-up's time to the question's total.
   const questionShownAtRef = useRef(Date.now());
   useEffect(() => {
     questionShownAtRef.current = Date.now();
-  }, [activeQuestionId]);
+  }, [activeQuestionId, followUp?.question]);
 
   const showError = (kind: Exclude<ErrorKind, null>, message: string) => {
     setError(message);
@@ -90,6 +108,36 @@ export default function Home() {
     setPreviousEntry(null);
   };
 
+  const clearFollowUps = () => {
+    setFollowUp(null);
+    setPendingNext(null);
+  };
+
+  const goToNext = (next: NextQuestion) => {
+    applyCurrentQuestion(next.q, next.pos);
+    // The overlap note matters more than the stage note when both apply.
+    setNoteText(next.bridge ?? (next.stageAdvanced ? t.stageAdvancedNote : ""));
+  };
+
+  /** "다음 질문으로 넘어가기": stop the follow-ups and move on. */
+  const finishFollowUps = () => {
+    stopSpeaking();
+    setJustCompleted(false);
+    const next = pendingNext;
+    clearFollowUps();
+    if (next) goToNext(next);
+  };
+
+  // ── Read aloud (Settings > 소리로 읽어주기) ──────────────────────────────
+  useEffect(() => {
+    if (!readAloudEnabled()) return;
+    if (followUp) speak([reaction, followUp.question].filter(Boolean).join(" "), lang);
+    else if (currentQuestion && mode === "normal")
+      speak(lang === "ja" ? currentQuestion.question_ja : currentQuestion.question_ko, lang);
+    // Speak when the question or follow-up on screen changes, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followUp?.question, currentQuestion?.id]);
+
   // ── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
     api
@@ -109,8 +157,14 @@ export default function Home() {
 
   // ── Answer pipeline: transcribe → generate chapter → save ────────────────
   const generateChapter = async (text: string) => {
-    const data = await api.generate(text, activeQuestionId, metricsRef.current);
+    const data = await api.generate(text, activeQuestionId, metricsRef.current, {
+      followUp: followUp ?? undefined,
+      // Re-answering an old question just overwrites it — no follow-ups.
+      allowFollowUp: mode !== "redo",
+    });
     setLastChapter(data.chapter);
+    setLastTranscript(data.transcript ?? text);
+    setReaction(data.reaction ?? "");
     setJustCompleted(true);
     // A short buzz on phones that support it, so it's noticed without looking.
     try {
@@ -125,9 +179,23 @@ export default function Home() {
       // jumping to the API's suggested next question.
       setNoteText(t.redoSavedNote);
       exitRedo();
+      return;
+    }
+
+    const next: NextQuestion = {
+      q: data.nextQuestion,
+      pos: data.stagePosition,
+      stageAdvanced: data.stageAdvanced,
+      bridge: data.bridge,
+    };
+    const asked = followUp?.index ?? 0;
+    if (data.followUp && asked < MAX_FOLLOW_UPS) {
+      // Stay on this story: ask the follow-up, keep the next question waiting.
+      setFollowUp({ question: data.followUp, index: asked + 1 });
+      setPendingNext(next);
     } else {
-      if (data.stageAdvanced) setNoteText(t.stageAdvancedNote);
-      applyCurrentQuestion(data.nextQuestion, data.stagePosition);
+      clearFollowUps();
+      goToNext(next);
     }
   };
 
@@ -200,6 +268,7 @@ export default function Home() {
   });
 
   const startRecording = async () => {
+    stopSpeaking();
     setJustCompleted(false);
     pendingBlobRef.current = null;
     pendingTextRef.current = null;
@@ -236,8 +305,10 @@ export default function Home() {
   const handlePicked = useCallback(
     async (picked: NonNullable<typeof pendingSelection>) => {
       recorder.cancel();
+      stopSpeaking();
       setJustCompleted(false);
       setReview(null);
+      clearFollowUps();
       pendingBlobRef.current = null;
       pendingTextRef.current = null;
       clearError();
@@ -277,6 +348,7 @@ export default function Home() {
   // ── Previous / skip ──────────────────────────────────────────────────────
   const handlePrevious = async () => {
     setJustCompleted(false);
+    clearFollowUps();
     setLoadingPrevious(true);
     setNoteText("");
     try {
@@ -301,6 +373,7 @@ export default function Home() {
 
   const handleSkip = async () => {
     setJustCompleted(false);
+    clearFollowUps();
     if (!currentQuestion) return;
     setNoteText("");
     try {
@@ -447,7 +520,7 @@ export default function Home() {
               </span>
               <span className="flex-1 flex flex-col gap-0.5">
                 <span className="text-lg font-bold">{t.chapterReadyTitle}</span>
-                <span className="text-sm leading-relaxed opacity-90">{t.chapterReadyBody}</span>
+                <span className="text-sm leading-relaxed opacity-90">{reaction || t.chapterReadyBody}</span>
               </span>
               <button
                 onClick={() => chapterRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
@@ -464,6 +537,24 @@ export default function Home() {
 
           <QuestionCard question={currentQuestion} />
 
+          {followUp && (
+            <div className="panel-enter w-full max-w-xl rounded-2xl border-2 border-accent bg-bg p-5 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-bold text-accent-dark">{t.followUpLabel}</span>
+                <span className="text-sm text-text-dim">{t.followUpCount(followUp.index, MAX_FOLLOW_UPS)}</span>
+              </div>
+              <p className="text-xl font-bold text-text leading-relaxed">{followUp.question}</p>
+              <button
+                type="button"
+                onClick={() => speak(followUp.question, lang)}
+                className="self-start flex items-center gap-1 min-h-[40px] px-3 rounded-xl border border-border bg-surface text-sm font-semibold text-accent-dark"
+              >
+                <IconSpeaker className="w-5 h-5" />
+                {t.listen}
+              </button>
+            </div>
+          )}
+
           {inReview ? (
             ReviewBlock
           ) : showResendUI ? (
@@ -473,18 +564,31 @@ export default function Home() {
               step={step}
               recordingSeconds={recorder.seconds}
               statusText={statusText}
-              actionLabel={micRetryActive ? t.micRetry : t.recordAction}
+              actionLabel={micRetryActive ? t.micRetry : followUp ? t.followUpAction : t.recordAction}
               onClick={step === "recording" ? () => recorder.stop() : startRecording}
               disabled={(!currentQuestion && step === "idle") || busy}
             />
           )}
 
-          <QuestionActionsRow
-            onPrevious={handlePrevious}
-            onSkip={handleSkip}
-            previousDisabled={busy || inReview || loadingPrevious}
-            skipDisabled={busy || inReview || !currentQuestion}
-          />
+          {followUp ? (
+            !busy &&
+            !inReview &&
+            step !== "recording" && (
+              <button
+                onClick={finishFollowUps}
+                className="w-full max-w-xl py-4 rounded-2xl border-2 border-border bg-surface text-lg font-semibold text-accent-dark hover:bg-surface2 transition-colors"
+              >
+                {t.followUpNext}
+              </button>
+            )
+          ) : (
+            <QuestionActionsRow
+              onPrevious={handlePrevious}
+              onSkip={handleSkip}
+              previousDisabled={busy || inReview || loadingPrevious}
+              skipDisabled={busy || inReview || !currentQuestion}
+            />
+          )}
 
           {lastChapter && (
             <div ref={chapterRef} className="w-full max-w-xl scroll-mt-20">

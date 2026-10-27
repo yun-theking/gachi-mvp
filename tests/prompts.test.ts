@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { validateReview, chapterMaxTokens, chapterPrompt, reviewPrompt } from "@/lib/prompts";
+import {
+  validateReview,
+  chapterMaxTokens,
+  chapterPrompt,
+  reviewPrompt,
+  parseChapterResult,
+  appendFollowUp,
+} from "@/lib/prompts";
 
 const RAW = "나는 대학 졸업하고 동네 약국에서 페의학사로 일했다 한 십년 정도";
 
@@ -45,7 +52,7 @@ describe("chapter length budget", () => {
 });
 
 describe("prompt rules", () => {
-  const q = { asked: "Q", recent: "", candidates: "- id:1 \"Q2\"" };
+  const q = { asked: "Q", recent: "", candidates: "- id:1 \"Q2\"", followUpsLeft: 3 };
 
   it("Korean chapters: facts only, book style (~했다), no fixed length", () => {
     const p = chapterPrompt("ko", q);
@@ -67,5 +74,43 @@ describe("prompt rules", () => {
     const p = reviewPrompt("ko", "첫 직장은?", "자영업");
     expect(p).toContain("첫 직장은?");
     expect(p).toContain("자영업");
+  });
+});
+
+describe("follow-ups, reactions, duplicates", () => {
+  const q = { asked: "Q", recent: "", candidates: "", followUpsLeft: 3 };
+
+  it("asks for a follow-up only while some are left", () => {
+    expect(chapterPrompt("ko", q)).toContain("빠진 것이 있을 때만");
+    expect(chapterPrompt("ko", { ...q, followUpsLeft: 0 })).toContain("항상 null");
+    expect(chapterPrompt("ja", { ...q, followUpsLeft: 0 })).toContain("常にnull");
+  });
+
+  it("tells the model not to re-ask what was already said and to prefer fresh questions", () => {
+    expect(chapterPrompt("ko", q)).toContain("이미 말한 내용은 묻지 마세요");
+    expect(chapterPrompt("ko", q)).toContain("새로운 이야기를 끌어낼 질문을 우선");
+  });
+
+  it("parses the result and drops extras that are missing, too long or not allowed", () => {
+    const ok = parseChapterResult(
+      { chapter: " 글 ", reaction: "고생 많으셨겠어요.", follow_up: "그때 몇 살이셨어요?", next_question_id: 7, bridge: null },
+      2
+    );
+    expect(ok).toEqual({
+      chapter: "글",
+      reaction: "고생 많으셨겠어요.",
+      followUp: "그때 몇 살이셨어요?",
+      nextQuestionId: 7,
+      bridge: null,
+    });
+    expect(parseChapterResult({ chapter: "글", follow_up: "질문?" }, 0).followUp).toBeNull();
+    expect(parseChapterResult({ chapter: "글", reaction: "가".repeat(200) }, 3).reaction).toBeNull();
+    expect(() => parseChapterResult({ reaction: "x" }, 3)).toThrow();
+  });
+
+  it("appends a follow-up answer to the earlier answer", () => {
+    expect(appendFollowUp("ko", "처음 답변", "언제였나요?", "열 살 때요")).toBe(
+      "처음 답변\n\n(추가 질문) 언제였나요?\n열 살 때요"
+    );
   });
 });

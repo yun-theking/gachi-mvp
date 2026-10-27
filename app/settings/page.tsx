@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { LANG_COOKIE, DEFAULT_LANG, isValidLang, FONT_SCALE_COOKIE, DEFAULT_FONT_SCALE, isValidFontScale } from "@/lib/auth";
 import { getDict } from "@/lib/i18n";
 import FontScaleToggle from "@/components/FontScaleToggle";
+import ReadAloudToggle from "@/components/ReadAloudToggle";
 import { USER_COOKIE } from "@/lib/auth";
 import { getUserFields } from "@/lib/questions";
 import { FIELD_SECTIONS } from "@/lib/stages";
@@ -26,6 +27,7 @@ export default async function SettingsPage() {
         <p className="text-base text-text-dim">{t.settingsBody}</p>
       </div>
       <FontScaleToggle initialScale={fontScale} />
+      <ReadAloudToggle />
       <div className="w-full max-w-xs flex flex-col items-center gap-2">
         <p className="text-sm font-semibold text-text">{t.settingsFieldsLabel}</p>
         <p className="text-base text-text-dim text-center">

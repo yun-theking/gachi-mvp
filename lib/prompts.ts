@@ -100,68 +100,124 @@ export function validateReview(raw: string, parsed: unknown): TranscriptReview {
 
 // ── Step 2: chapter writing ────────────────────────────────────────────────
 
-const CHAPTER_PROMPTS: Record<
-  Lang,
-  (q: { asked: string; recent: string; candidates: string }) => string
-> = {
-  ko: ({ asked, recent, candidates }) => `당신은 어르신이 말로 들려준 이야기를 자서전 원고로 옮기는 편집자입니다.
+export interface ChapterPromptInput {
+  asked: string;
+  recent: string;
+  candidates: string;
+  /** How many more follow-up questions may be asked about this question. */
+  followUpsLeft: number;
+}
+
+const CHAPTER_PROMPTS: Record<Lang, (q: ChapterPromptInput) => string> = {
+  ko: ({ asked, recent, candidates, followUpsLeft }) => `당신은 어르신이 말로 들려준 이야기를 자서전 원고로 옮기는 편집자이자, 이야기를 끌어내는 인터뷰어입니다.
 가장 중요한 원칙은 사실에 충실한 것입니다. 글을 풍부하게 만드는 것보다 말한 내용을 정확하게 담는 것이 우선입니다.
 
 [방금 받은 질문]
 ${asked}
 
-[최근 답변 기록 (오래된 순) — 다음 질문을 고를 때만 참고]
+[최근 답변 기록 (오래된 순) — 다음 질문을 고르거나 겹치는 이야기를 피할 때만 참고]
 ${recent || "(아직 없음)"}
 
-두 가지를 JSON으로 반환하세요.
+이번 답변은 처음 답변 하나일 수도 있고, 처음 답변 뒤에 "(추가 질문)"과 그 답변이 이어진 것일 수도 있습니다.
 
-1. chapter: 이번 답변을 자서전 원고로 옮긴 글
+다섯 가지를 JSON으로 반환하세요.
+
+1. chapter: 이번 답변(추가 질문의 답변 포함)을 하나로 합쳐 자서전 원고로 옮긴 글
    - 사용자가 이번 답변에서 실제로 말한 내용만 쓰세요. 말하지 않은 사건, 인물, 장소, 날짜, 숫자, 감정, 대화, 교훈을 지어내거나 추측해서 넣지 마세요.
    - 최근 답변 기록의 내용을 이번 글에 가져오지 마세요.
    - 할 수 있는 것: 말버릇·반복·군더더기 빼기, 순서 정리, 문장 다듬기, 문장 잇기.
    - 문체: 책에 쓰는 "~했다", "~였다" 평서체로 통일하세요. "~했습니다", "~해요"를 섞지 마세요. 1인칭은 "나"를 쓰세요.
    - 담백하게 쓰세요. 화려한 비유, 과장, 감상적인 꾸밈, 말하지 않은 마무리 교훈을 넣지 마세요.
    - 길이는 답변의 양에 맞추세요. 짧게 답했으면 한두 문장으로 짧게, 길게 답했으면 세부 내용을 빠뜨리지 말고 모두 담으세요. 분량을 채우려고 늘리지 마세요.
-2. next_question_id: 아래 후보 중 지금까지의 흐름상 다음으로 묻기에 가장 자연스러운 질문의 id 하나. 후보 목록의 id만 고르고, 질문 문구를 새로 짓지 마세요.
+2. reaction: 방금 이야기에 대한 짧은 맞장구 한 문장(30자 이내, "~요"로 끝나는 존댓말). 들은 내용에만 반응하고, 새로운 사실·평가·질문을 넣지 마세요. 예: "그 시절 정말 고생 많으셨겠어요."
+3. follow_up: ${followUpsLeft > 0
+    ? `이 이야기를 자서전에 담는 데 중요한 내용(언제, 누구와, 무슨 일이, 그때 마음, 그 뒤 어떻게 됐는지) 중 빠진 것이 있을 때만, 그것을 묻는 짧은 질문 하나(50자 이내, 존댓말). 이번 답변이나 최근 답변 기록에서 이미 말한 내용은 묻지 마세요. 충분히 이야기했다면 null.`
+    : "항상 null."}
+4. next_question_id: 아래 후보 중 다음으로 묻기에 가장 자연스러운 질문의 id 하나. 최근 답변 기록에서 이미 이야기한 사건으로 또 답하게 될 질문보다 새로운 이야기를 끌어낼 질문을 우선하세요. 후보 목록의 id만 고르고, 질문 문구를 새로 짓지 마세요.
+5. bridge: 고른 다음 질문이 최근 답변 기록에서 이미 말한 사건과 겹칠 것 같으면, "앞서 ○○ 이야기를 해주셨으니, 이번에는 다른 일을 떠올려보셔도 좋아요."처럼 안내하는 한 문장(50자 이내). 겹치지 않으면 null.
 
 [다음 질문 후보]
-${candidates || "(후보가 없습니다. next_question_id는 null로 응답하세요.)"}
+${candidates || "(후보가 없습니다. next_question_id와 bridge는 null로 응답하세요.)"}
 
 JSON만 출력하세요:
-{"chapter": "...", "next_question_id": <숫자 또는 null>}`,
+{"chapter": "...", "reaction": "...", "follow_up": "..." 또는 null, "next_question_id": <숫자 또는 null>, "bridge": "..." 또는 null}`,
 
-  ja: ({ asked, recent, candidates }) => `あなたは、高齢の方が口頭で語った話を自分史の原稿にまとめる編集者です。
+  ja: ({ asked, recent, candidates, followUpsLeft }) => `あなたは、高齢の方が口頭で語った話を自分史の原稿にまとめる編集者であり、話を引き出すインタビュアーです。
 最も大切な原則は事実に忠実であることです。文章を豊かにすることより、語られた内容を正確に残すことを優先してください。
 
 [たった今受けた質問]
 ${asked}
 
-[最近の回答履歴（古い順）— 次の質問を選ぶときだけ参考にする]
+[最近の回答履歴（古い順）— 次の質問を選ぶとき、話の重複を避けるときだけ参考にする]
 ${recent || "（まだありません）"}
 
-次の2つをJSONで返してください。
+今回の回答は、最初の回答だけの場合と、最初の回答のあとに「（追加の質問）」とその回答が続く場合があります。
 
-1. chapter: 今回の回答を自分史の原稿にした文章
+次の5つをJSONで返してください。
+
+1. chapter: 今回の回答（追加の質問への回答を含む）を一つにまとめて自分史の原稿にした文章
    - 今回の回答で実際に語られた内容だけを書いてください。語られていない出来事・人物・場所・日付・数字・感情・会話・教訓を創作したり推測で加えたりしないでください。
    - 最近の回答履歴の内容を今回の文章に持ち込まないでください。
    - してよいこと：口癖・繰り返し・言いよどみを省く、順序を整える、文を整える、文をつなぐ。
    - 文体：「〜した」「〜だった」「〜である」のだ・である調（常体）で統一してください。です・ます調を混ぜないでください。一人称は「私」を使ってください。
    - 淡々と書いてください。華やかな比喩、誇張、感傷的な装飾、語られていない締めくくりの教訓は入れないでください。
    - 長さは回答の量に合わせてください。短い回答なら1〜2文で短く、長い回答なら細部を落とさずすべて含めてください。分量を埋めるために膨らませないでください。
-2. next_question_id: 下記の候補から、これまでの流れで次に尋ねるのに最も自然な質問のidを1つ。候補リストのidだけを選び、質問文を新しく作らないでください。
+2. reaction: 今の話への短いあいづち一文（30字以内、です・ます調）。聞いた内容にだけ反応し、新しい事実・評価・質問は入れないでください。例：「その頃は本当にご苦労されたのですね。」
+3. follow_up: ${followUpsLeft > 0
+    ? `この話を自分史に残すうえで大切な点（いつ、誰と、何があったか、その時の気持ち、その後どうなったか）が抜けている場合だけ、それを尋ねる短い質問を一つ（50字以内、です・ます調）。今回の回答や最近の回答履歴ですでに語られた内容は尋ねないでください。十分に語られていればnull。`
+    : "常にnull。"}
+4. next_question_id: 下記の候補から、次に尋ねるのに最も自然な質問のidを1つ。最近の回答履歴ですでに語られた出来事でまた答えることになりそうな質問より、新しい話を引き出せる質問を優先してください。候補リストのidだけを選び、質問文を新しく作らないでください。
+5. bridge: 選んだ次の質問が最近の回答履歴ですでに語られた出来事と重なりそうな場合、「先ほど○○のお話を伺ったので、今回は別の出来事を思い浮かべていただいても構いません。」のような案内を一文（50字以内）。重ならなければnull。
 
 [次の質問候補]
-${candidates || "（候補がありません。next_question_idはnullで応答してください。）"}
+${candidates || "（候補がありません。next_question_idとbridgeはnullで応答してください。）"}
 
 JSONのみを出力してください:
-{"chapter": "...", "next_question_id": <数値またはnull>}`,
+{"chapter": "...", "reaction": "...", "follow_up": "..." または null, "next_question_id": <数値またはnull>, "bridge": "..." または null}`,
 };
 
-export function chapterPrompt(
-  lang: Lang,
-  q: { asked: string; recent: string; candidates: string }
-): string {
+export function chapterPrompt(lang: Lang, q: ChapterPromptInput): string {
   return CHAPTER_PROMPTS[lang](q);
+}
+
+/** At most this many follow-up questions per bank question. */
+export const MAX_FOLLOW_UPS = 3;
+
+export interface ChapterResult {
+  chapter: string;
+  reaction: string | null;
+  followUp: string | null;
+  nextQuestionId: number | null;
+  bridge: string | null;
+}
+
+function shortText(v: unknown, max: number): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  return t && t.length <= max ? t : null;
+}
+
+/** Checks the model's chapter output. Throws if there's no chapter; drops
+ * extras that are missing, too long, or not allowed right now. */
+export function parseChapterResult(parsed: unknown, followUpsLeft: number): ChapterResult {
+  const p = (parsed && typeof parsed === "object" ? parsed : {}) as Record<string, unknown>;
+  const chapter = typeof p.chapter === "string" ? p.chapter.trim() : "";
+  if (!chapter) throw new Error("no chapter in model output");
+  return {
+    chapter,
+    reaction: shortText(p.reaction, 60),
+    followUp: followUpsLeft > 0 ? shortText(p.follow_up, 100) : null,
+    nextQuestionId: typeof p.next_question_id === "number" ? p.next_question_id : null,
+    bridge: shortText(p.bridge, 100),
+  };
+}
+
+/** Label put in front of a follow-up question inside the stored transcript. */
+export const FOLLOW_UP_LABEL: Record<Lang, string> = { ko: "(추가 질문)", ja: "（追加の質問）" };
+
+/** Earlier answer + a follow-up question and its answer, as one transcript. */
+export function appendFollowUp(lang: Lang, previous: string, question: string, answer: string): string {
+  return `${previous.trim()}\n\n${FOLLOW_UP_LABEL[lang]} ${question.trim()}\n${answer.trim()}`;
 }
 
 /**

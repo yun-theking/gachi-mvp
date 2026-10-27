@@ -41,6 +41,16 @@ export interface Dict {
   chapterLabelDefault: string;
   redoSavedNote: string;
   chapterReadyTitle: string;
+  followUpLabel: string;
+  followUpCount: (n: number, max: number) => string;
+  followUpAction: string;
+  followUpNext: string;
+  listen: string;
+  readAloudTitle: string;
+  readAloudHint: string;
+  readAloudOn: string;
+  readAloudOff: string;
+  readAloudSample: string;
   reviewTitle: string;
   reviewHint: string;
   reviewCorrectedLabel: string;
@@ -144,6 +154,16 @@ const dict: Record<Lang, Dict> = {
     chapterLabelDefault: "회고록 챕터",
     redoSavedNote: "답변이 수정됐어요",
     chapterReadyTitle: "회고록 한 편이 완성됐어요",
+    followUpLabel: "조금 더 여쭤볼게요",
+    followUpCount: (n: number, max: number) => `추가 질문 ${n}/${max}`,
+    followUpAction: "이어서 답하기",
+    followUpNext: "다음 질문으로 넘어가기",
+    listen: "듣기",
+    readAloudTitle: "소리로 읽어주기",
+    readAloudHint: "질문과 맞장구를 소리로 읽어드려요",
+    readAloudOn: "켜기",
+    readAloudOff: "끄기",
+    readAloudSample: "이렇게 읽어드릴게요.",
     reviewTitle: "이렇게 들었어요",
     reviewHint: "틀린 부분이 있으면 글을 눌러서 직접 고쳐주세요. 맞으면 아래 버튼을 눌러주세요.",
     reviewCorrectedLabel: "자동으로 고친 부분",
@@ -248,6 +268,16 @@ const dict: Record<Lang, Dict> = {
     chapterLabelDefault: "回顧録の章",
     redoSavedNote: "回答を修正しました",
     chapterReadyTitle: "回顧録が1編できあがりました",
+    followUpLabel: "もう少しお聞かせください",
+    followUpCount: (n: number, max: number) => `追加の質問 ${n}/${max}`,
+    followUpAction: "続けて答える",
+    followUpNext: "次の質問へ進む",
+    listen: "聞く",
+    readAloudTitle: "読み上げ",
+    readAloudHint: "質問やあいづちを音声で読み上げます",
+    readAloudOn: "オン",
+    readAloudOff: "オフ",
+    readAloudSample: "このように読み上げます。",
     reviewTitle: "このように聞き取りました",
     reviewHint: "間違いがあれば、文章を押して直接直してください。合っていれば下のボタンを押してください。",
     reviewCorrectedLabel: "自動で直した箇所",
