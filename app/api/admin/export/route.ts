@@ -6,6 +6,7 @@ import { stageNameEn } from "@/lib/stages";
 
 interface EntryExportRow {
   user_id: string;
+  question_id?: number | null;
   language: string;
   life_stage_id: number;
   question_ko: string;
@@ -115,7 +116,7 @@ export async function GET(req: NextRequest) {
     // Full download: one tab per user, so a reader can jump straight to one
     // person instead of scrolling through everyone in a single flat sheet.
     const result = await db.execute(
-      `SELECT e.user_id, COALESCE(u.language, 'ko') as language, e.life_stage_id,
+      `SELECT e.user_id, COALESCE(u.language, 'ko') as language, e.life_stage_id, e.question_id,
               e.question_ko, e.question_ja, e.transcript, e.chapter, e.created_at,
               e.recording_seconds, e.time_on_question_seconds, e.answer_chars
        FROM entries e
@@ -153,6 +154,41 @@ export async function GET(req: NextRequest) {
         avg_chars: average(entries.map((e) => e.answer_chars)),
       });
     }
+
+    // Per-question averages across everyone: which questions take long,
+    // get short answers, or are rarely answered — for deciding how many
+    // questions to keep and which to reword.
+    const perQuestion = workbook.addWorksheet("Per Question");
+    perQuestion.columns = [
+      { header: "Question ID", key: "question_id", width: 12 },
+      { header: "Question (Korean)", key: "question_ko", width: 50 },
+      { header: "Answers", key: "answers", width: 10 },
+      { header: "Avg Recording (sec)", key: "avg_recording", width: 20 },
+      { header: "Avg Time on Question (sec)", key: "avg_time", width: 26 },
+      { header: "Avg Answer Length (chars)", key: "avg_chars", width: 24 },
+    ];
+    perQuestion.getRow(1).font = { bold: true };
+    const byQuestion = new Map<string, EntryExportRow[]>();
+    for (const r of rows) {
+      const key = String(r.question_id ?? "");
+      if (!key) continue;
+      const list = byQuestion.get(key);
+      if (list) list.push(r);
+      else byQuestion.set(key, [r]);
+    }
+    for (const [qid, list] of [...byQuestion].sort(([a], [b]) => Number(a) - Number(b))) {
+      perQuestion.addRow({
+        question_id: Number(qid),
+        question_ko: list[0].question_ko,
+        answers: list.length,
+        avg_recording: average(list.map((e) => e.recording_seconds)),
+        avg_time: average(list.map((e) => e.time_on_question_seconds)),
+        avg_chars: average(list.map((e) => e.answer_chars)),
+      });
+    }
+    perQuestion.eachRow((row) => {
+      row.alignment = { vertical: "top", wrapText: true };
+    });
 
     for (const [uid, entries] of byUser) {
       addEntryRows(workbook.addWorksheet(sheetNameFor(uid)), entries);
