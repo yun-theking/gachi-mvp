@@ -6,6 +6,8 @@ import {
   getRemainingQuestions,
   getProgressSummary,
   getStagePosition,
+  toClientQuestion,
+  getQuestionNumber,
 } from "@/lib/questions";
 import { USER_COOKIE } from "@/lib/auth";
 
@@ -32,14 +34,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     nextQuestion: nextQuestion
-      ? {
-          id: nextQuestion.id,
-          life_stage_id: nextQuestion.life_stage_id,
-          life_stage_ko: nextQuestion.life_stage_ko,
-          life_stage_ja: nextQuestion.life_stage_ja,
-          question_ko: nextQuestion.question_ko,
-          question_ja: nextQuestion.question_ja,
-        }
+      ? toClientQuestion(nextQuestion, await getQuestionNumber(userId, nextQuestion.id))
       : null,
     stagePosition: nextQuestion
       ? await getStagePosition(nextQuestion.life_stage_id, nextQuestion.id)

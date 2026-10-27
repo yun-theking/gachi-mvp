@@ -40,6 +40,10 @@ export interface Dict {
   justAnsweredLabel: string;
   chapterLabelDefault: string;
   redoSavedNote: string;
+  chapterReadyTitle: string;
+  questionNumberLabel: (n: number) => string;
+  chapterReadyBody: string;
+  chapterReadyView: string;
   skippedNote: string;
   noPreviousNote: string;
   stageAdvancedNote: string;
@@ -66,6 +70,7 @@ export interface Dict {
   fontScaleLarge: string;
   fieldsTitle: string;
   fieldsSubtitle: string;
+  fieldsMultiHint: string;
   fieldsDone: (count: number) => string;
   fieldsNone: string;
   fieldsCancel: string;
@@ -131,6 +136,10 @@ const dict: Record<Lang, Dict> = {
     justAnsweredLabel: "방금 남긴 이야기",
     chapterLabelDefault: "회고록 챕터",
     redoSavedNote: "답변이 수정됐어요",
+    chapterReadyTitle: "회고록 한 편이 완성됐어요",
+    questionNumberLabel: (n: number) => `질문 ${n}`,
+    chapterReadyBody: "방금 쓴 글은 아래에서 읽어보실 수 있어요. 다음 질문도 준비됐어요.",
+    chapterReadyView: "읽어보기",
     skippedNote: "질문을 건너뛰었어요",
     noPreviousNote: "아직 답변한 질문이 없어요",
     stageAdvancedNote: "다음 생애주기로 넘어갑니다 →",
@@ -160,6 +169,7 @@ const dict: Record<Lang, Dict> = {
     fontScaleLarge: "대",
     fieldsTitle: "어떤 일을 해오셨나요?",
     fieldsSubtitle: "해당하는 분야나 경험을 모두 골라주세요. 고르신 분야에 맞는 질문이 추가돼요. 나중에 설정에서 바꿀 수 있어요.",
+    fieldsMultiHint: "해당하는 것 모두 선택 (여러 개 가능)",
     fieldsDone: (count: number) => `${count}개 선택 완료`,
     fieldsNone: "해당 없음으로 계속하기",
     fieldsCancel: "바꾸지 않고 돌아가기",
@@ -223,6 +233,10 @@ const dict: Record<Lang, Dict> = {
     justAnsweredLabel: "たった今残した話",
     chapterLabelDefault: "回顧録の章",
     redoSavedNote: "回答を修正しました",
+    chapterReadyTitle: "回顧録が1編できあがりました",
+    questionNumberLabel: (n: number) => `質問 ${n}`,
+    chapterReadyBody: "書き上がった文章は下で読めます。次の質問も準備できています。",
+    chapterReadyView: "読む",
     skippedNote: "質問をスキップしました",
     noPreviousNote: "まだ回答した質問がありません",
     stageAdvancedNote: "次のライフステージに進みます →",
@@ -252,6 +266,7 @@ const dict: Record<Lang, Dict> = {
     fontScaleLarge: "大",
     fieldsTitle: "どのようなお仕事・ご経験をされてきましたか？",
     fieldsSubtitle: "当てはまる分野やご経験をすべて選んでください。選んだ分野に合わせた質問が追加されます。あとから設定で変更できます。",
+    fieldsMultiHint: "当てはまるものをすべて選択（複数可）",
     fieldsDone: (count: number) => `${count}件を選んで次へ`,
     fieldsNone: "当てはまらないので次へ",
     fieldsCancel: "変更せずに戻る",
@@ -265,7 +280,7 @@ const dict: Record<Lang, Dict> = {
     onboardingSkip: "スキップ",
     onboardingNext: "次へ",
     onboardingStart: "はじめる",
-    onboardingStep1Title: "가치へようこそ",
+    onboardingStep1Title: "Gachiへようこそ",
     onboardingStep1Body: "声で答えるだけで、歩んでこられた人生の物語が自動であなただけの回顧録になるアプリです。",
     onboardingStep2Title: "質問に気軽に答えてみましょう",
     onboardingStep2Body: "画面の質問を見て、下のマイクボタンを押してお話しください。難しい質問はスキップしたり、好きな質問を選んで答えることもできます。",

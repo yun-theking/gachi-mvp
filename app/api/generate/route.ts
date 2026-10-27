@@ -9,6 +9,8 @@ import {
   getProgressSummary,
   getStagePosition,
   getRecentEntries,
+  toClientQuestion,
+  getQuestionNumber,
 } from "@/lib/questions";
 import { USER_COOKIE, LANG_COOKIE, DEFAULT_LANG, isValidLang, type Lang } from "@/lib/auth";
 
@@ -75,6 +77,12 @@ ${candidateList || "（このライフステージの候補はすべて消化さ
   },
 };
 
+/** Client-reported durations: whole seconds within a sane range, else null. */
+function toSeconds(v: unknown): number | null {
+  if (typeof v !== "number" || !Number.isFinite(v) || v < 0) return null;
+  return Math.min(Math.round(v), 24 * 60 * 60);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const userId = req.cookies.get(USER_COOKIE)?.value;
@@ -84,9 +92,11 @@ export async function POST(req: NextRequest) {
     const langCookie = req.cookies.get(LANG_COOKIE)?.value;
     const lang: Lang = isValidLang(langCookie) ? langCookie : DEFAULT_LANG;
 
-    const { text, questionId } = (await req.json()) as {
+    const { text, questionId, recordingSeconds, timeOnQuestionSeconds } = (await req.json()) as {
       text: string;
       questionId?: number;
+      recordingSeconds?: unknown;
+      timeOnQuestionSeconds?: unknown;
     };
 
     if (!text?.trim()) {
@@ -163,6 +173,8 @@ export async function POST(req: NextRequest) {
       questionJa: askedJa,
       transcript: text,
       chapter: parsed.chapter,
+      recordingSeconds: toSeconds(recordingSeconds),
+      timeOnQuestionSeconds: toSeconds(timeOnQuestionSeconds),
     });
 
     // Resolve the actual next question. Recompute *after* saving, since saving just
@@ -178,14 +190,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       chapter: parsed.chapter,
       nextQuestion: nextQuestion
-        ? {
-            id: nextQuestion.id,
-            life_stage_id: nextQuestion.life_stage_id,
-            life_stage_ko: nextQuestion.life_stage_ko,
-            life_stage_ja: nextQuestion.life_stage_ja,
-            question_ko: nextQuestion.question_ko,
-            question_ja: nextQuestion.question_ja,
-          }
+        ? toClientQuestion(nextQuestion, await getQuestionNumber(userId, nextQuestion.id))
         : null,
       stagePosition: nextQuestion
         ? await getStagePosition(nextQuestion.life_stage_id, nextQuestion.id)

@@ -13,6 +13,9 @@ interface EntryExportRow {
   transcript: string;
   chapter: string;
   created_at: string;
+  recording_seconds: number | null;
+  time_on_question_seconds: number | null;
+  answer_chars: number | null;
 }
 
 function languageLabel(language: string): string {
@@ -28,7 +31,17 @@ const EXPORT_COLUMNS = [
   { header: "Answer (Transcript)", key: "transcript", width: 50 },
   { header: "Memoir Chapter", key: "chapter", width: 60 },
   { header: "Created At", key: "created_at", width: 20 },
+  { header: "Recording (sec)", key: "recording_seconds", width: 15 },
+  { header: "Time on Question (sec)", key: "time_on_question_seconds", width: 22 },
+  { header: "Answer Length (chars)", key: "answer_chars", width: 20 },
 ];
+
+/** Average of the non-null values, rounded; blank when there are none
+ * (e.g. answers saved before measurements were added). */
+function average(values: (number | null)[]): number | "" {
+  const nums = values.filter((v): v is number => v !== null && v !== undefined).map(Number);
+  return nums.length ? Math.round(nums.reduce((a, b) => a + b, 0) / nums.length) : "";
+}
 
 function addEntryRows(sheet: ExcelJS.Worksheet, rows: EntryExportRow[]) {
   sheet.columns = EXPORT_COLUMNS;
@@ -44,6 +57,9 @@ function addEntryRows(sheet: ExcelJS.Worksheet, rows: EntryExportRow[]) {
       transcript: r.transcript,
       chapter: r.chapter,
       created_at: r.created_at,
+      recording_seconds: r.recording_seconds ?? "",
+      time_on_question_seconds: r.time_on_question_seconds ?? "",
+      answer_chars: r.answer_chars ?? "",
     });
   }
 
@@ -76,7 +92,8 @@ export async function GET(req: NextRequest) {
     // Single-user download: one sheet, this user only.
     const result = await db.execute({
       sql: `SELECT e.user_id, COALESCE(u.language, 'ko') as language, e.life_stage_id,
-                   e.question_ko, e.question_ja, e.transcript, e.chapter, e.created_at
+                   e.question_ko, e.question_ja, e.transcript, e.chapter, e.created_at,
+                   e.recording_seconds, e.time_on_question_seconds, e.answer_chars
             FROM entries e
             LEFT JOIN users u ON u.id = e.user_id
             WHERE e.user_id = ?
@@ -99,7 +116,8 @@ export async function GET(req: NextRequest) {
     // person instead of scrolling through everyone in a single flat sheet.
     const result = await db.execute(
       `SELECT e.user_id, COALESCE(u.language, 'ko') as language, e.life_stage_id,
-              e.question_ko, e.question_ja, e.transcript, e.chapter, e.created_at
+              e.question_ko, e.question_ja, e.transcript, e.chapter, e.created_at,
+              e.recording_seconds, e.time_on_question_seconds, e.answer_chars
        FROM entries e
        LEFT JOIN users u ON u.id = e.user_id
        ORDER BY e.user_id, e.life_stage_id, e.id`
@@ -114,12 +132,15 @@ export async function GET(req: NextRequest) {
     }
 
     // Overview tab first so the admin has a jump-off point before the
-    // per-user tabs. Kept minimal — just who's in this export.
+    // per-user tabs: who's in this export, plus per-person averages.
     const overview = workbook.addWorksheet("Overview");
     overview.columns = [
       { header: "User ID", key: "user_id", width: 14 },
       { header: "Language", key: "language", width: 10 },
       { header: "Entry Count", key: "count", width: 12 },
+      { header: "Avg Recording (sec)", key: "avg_recording", width: 20 },
+      { header: "Avg Time on Question (sec)", key: "avg_time", width: 26 },
+      { header: "Avg Answer Length (chars)", key: "avg_chars", width: 24 },
     ];
     overview.getRow(1).font = { bold: true };
     for (const [uid, entries] of byUser) {
@@ -127,6 +148,9 @@ export async function GET(req: NextRequest) {
         user_id: uid,
         language: languageLabel(entries[0].language),
         count: entries.length,
+        avg_recording: average(entries.map((e) => e.recording_seconds)),
+        avg_time: average(entries.map((e) => e.time_on_question_seconds)),
+        avg_chars: average(entries.map((e) => e.answer_chars)),
       });
     }
 

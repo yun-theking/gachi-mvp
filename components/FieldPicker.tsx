@@ -44,6 +44,9 @@ export default function FieldPicker({
       <div className="w-full max-w-xl flex flex-col gap-2 mb-6">
         <h1 className="font-serif text-2xl font-bold text-text">{t.fieldsTitle}</h1>
         <p className="text-base text-text-dim leading-relaxed">{t.fieldsSubtitle}</p>
+        <p className="self-start mt-1 text-sm font-bold text-accent-dark bg-accent/10 border border-accent/30 rounded-full px-3 py-1">
+          {t.fieldsMultiHint}
+        </p>
       </div>
 
       <div className="w-full max-w-xl flex flex-col gap-3">

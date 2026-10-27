@@ -63,6 +63,22 @@ export function visibleStageIds(fields: string[]): number[] {
   ];
 }
 
+const questionIdsBySection = new Map(
+  (bank as BankSection[]).map((s) => [s.life_stage_id, s.questions.map((q) => q.id)])
+);
+
+/** Question number as the person sees it: 1, 2, 3… through their visible
+ * sections in interview order. Common questions are always 1-50; field
+ * questions follow from 51 in the order of the fields they picked. */
+export function questionNumbers(fields: string[]): Map<number, number> {
+  const numbers = new Map<number, number>();
+  let n = 1;
+  for (const stageId of visibleStageIds(fields)) {
+    for (const id of questionIdsBySection.get(stageId) ?? []) numbers.set(id, n++);
+  }
+  return numbers;
+}
+
 export function stageName(lang: Lang, stageId: number): string {
   return byId.get(stageId)?.name[lang] ?? "";
 }

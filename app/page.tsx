@@ -6,7 +6,7 @@ import QuestionCard, { type BankQuestion } from "@/components/QuestionCard";
 import ChapterPanel from "@/components/ChapterPanel";
 import StageProgress from "@/components/StageProgress";
 import QuestionActionsRow from "@/components/QuestionActionsRow";
-import { IconChevronLeft } from "@/components/icons";
+import { IconChevronLeft, IconCheck } from "@/components/icons";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useQuestionSelection } from "@/components/QuestionSelectionProvider";
 import OnboardingModal from "@/components/OnboardingModal";
@@ -33,6 +33,9 @@ export default function Home() {
   const [lastTranscript, setLastTranscript] = useState("");
   const [lastChapter, setLastChapter] = useState("");
   const [noteText, setNoteText] = useState("");
+  // A chapter was just written: show the "done" banner until the next action.
+  const [justCompleted, setJustCompleted] = useState(false);
+  const chapterRef = useRef<HTMLDivElement>(null);
 
   // Redo mode: re-answering an already-answered question (the most recent
   // one via "이전 질문", or any one picked from the full question list).
@@ -43,9 +46,17 @@ export default function Home() {
   // Kept across a failed send so "다시 보내기" can retry without re-recording.
   const pendingBlobRef = useRef<Blob | null>(null);
   const pendingTextRef = useRef<string | null>(null);
+  // Measurements for the answer in flight (kept with the blob for retries).
+  const metricsRef = useRef<api.AnswerMetrics | null>(null);
 
   const activeQuestionId =
     mode === "redo" ? previousEntry?.questionId : currentQuestion?.id;
+
+  // When the question now on screen first appeared — for "time on question".
+  const questionShownAtRef = useRef(Date.now());
+  useEffect(() => {
+    questionShownAtRef.current = Date.now();
+  }, [activeQuestionId]);
 
   const showError = (kind: Exclude<ErrorKind, null>, message: string) => {
     setError(message);
@@ -94,8 +105,15 @@ export default function Home() {
 
   // ── Answer pipeline: transcribe → generate chapter → save ────────────────
   const generateChapter = async (text: string) => {
-    const data = await api.generate(text, activeQuestionId);
+    const data = await api.generate(text, activeQuestionId, metricsRef.current);
     setLastChapter(data.chapter);
+    setJustCompleted(true);
+    // A short buzz on phones that support it, so it's noticed without looking.
+    try {
+      navigator.vibrate?.(80);
+    } catch {
+      // Not supported (e.g. iOS Safari) — the banner alone is enough.
+    }
 
     if (mode === "redo") {
       // Re-answering only overwrites that answer. Keep whatever question the
@@ -150,13 +168,18 @@ export default function Home() {
   };
 
   const recorder = useRecorder({
-    onRecorded: (blob, { auto }) => {
+    onRecorded: (blob, { auto, durationSeconds }) => {
+      metricsRef.current = {
+        recordingSeconds: durationSeconds,
+        timeOnQuestionSeconds: (Date.now() - questionShownAtRef.current) / 1000,
+      };
       if (auto) setNoteText(t.recordingAutoStopped);
       void processAudio(blob);
     },
   });
 
   const startRecording = async () => {
+    setJustCompleted(false);
     pendingBlobRef.current = null;
     pendingTextRef.current = null;
     const ok = await recorder.start();
@@ -192,6 +215,7 @@ export default function Home() {
   const handlePicked = useCallback(
     async (picked: NonNullable<typeof pendingSelection>) => {
       recorder.cancel();
+      setJustCompleted(false);
       pendingBlobRef.current = null;
       pendingTextRef.current = null;
       clearError();
@@ -230,6 +254,7 @@ export default function Home() {
 
   // ── Previous / skip ──────────────────────────────────────────────────────
   const handlePrevious = async () => {
+    setJustCompleted(false);
     setLoadingPrevious(true);
     setNoteText("");
     try {
@@ -252,6 +277,7 @@ export default function Home() {
   };
 
   const handleSkip = async () => {
+    setJustCompleted(false);
     if (!currentQuestion) return;
     setNoteText("");
     try {
@@ -287,6 +313,7 @@ export default function Home() {
         life_stage_ja: previousEntry.lifeStageJa,
         question_ko: previousEntry.questionKo,
         question_ja: previousEntry.questionJa,
+        number: previousEntry.questionNumber,
       }
     : null;
 
@@ -374,6 +401,28 @@ export default function Home() {
         </div>
       ) : (
         <>
+          {justCompleted && lastChapter && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="panel-enter w-full max-w-xl rounded-2xl bg-accent-dark text-bg px-5 py-4 flex items-center gap-4"
+            >
+              <span className="shrink-0 w-10 h-10 rounded-full bg-bg/20 flex items-center justify-center">
+                <IconCheck className="w-6 h-6" />
+              </span>
+              <span className="flex-1 flex flex-col gap-0.5">
+                <span className="text-lg font-bold">{t.chapterReadyTitle}</span>
+                <span className="text-sm leading-relaxed opacity-90">{t.chapterReadyBody}</span>
+              </span>
+              <button
+                onClick={() => chapterRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="shrink-0 min-h-[44px] px-4 rounded-xl bg-bg text-accent-dark font-semibold text-base"
+              >
+                {t.chapterReadyView}
+              </button>
+            </div>
+          )}
+
           <StageProgress currentStageId={currentStageId} stagePosition={stagePosition} />
 
           {noteText && <p className="w-full max-w-xl text-sm text-accent-dark font-semibold">{noteText}</p>}
@@ -401,7 +450,9 @@ export default function Home() {
           />
 
           {lastChapter && (
-            <ChapterPanel label={t.justAnsweredLabel} transcript={lastTranscript} chapter={lastChapter} />
+            <div ref={chapterRef} className="w-full max-w-xl scroll-mt-20">
+              <ChapterPanel label={t.justAnsweredLabel} transcript={lastTranscript} chapter={lastChapter} />
+            </div>
           )}
         </>
       )}

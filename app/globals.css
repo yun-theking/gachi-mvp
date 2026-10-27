@@ -5,6 +5,17 @@
 :root {
   --background: #fbf3e4;
   --foreground: #2c2015;
+  /* Korean pages: KR fonts first. */
+  --font-sans: "Noto Sans KR Variable", "Noto Sans JP Variable", sans-serif;
+  --font-serif: "Noto Serif KR Variable", "Noto Serif JP Variable", serif;
+}
+
+/* Japanese pages: JP fonts first, so kanji get Japanese glyph shapes.
+ * Kanji and Korean hanja share Unicode code points, and whichever font comes
+ * first draws them — a KR-first stack draws e.g. 直, 骨, 写 Korean-style. */
+html[lang="ja"] {
+  --font-sans: "Noto Sans JP Variable", "Noto Sans KR Variable", sans-serif;
+  --font-serif: "Noto Serif JP Variable", "Noto Serif KR Variable", serif;
 }
 
 html {

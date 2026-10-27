@@ -5,6 +5,7 @@ import {
   getEntryByQuestionId,
   getStagePosition,
   getQuestionById,
+  getQuestionNumber,
 } from "@/lib/questions";
 import { USER_COOKIE } from "@/lib/auth";
 
@@ -27,14 +28,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ entry: null, stagePosition: null });
   }
 
-  const [stagePosition, question] = await Promise.all([
+  const [stagePosition, question, questionNumber] = await Promise.all([
     getStagePosition(entry.life_stage_id, entry.question_id),
     getQuestionById(entry.question_id),
+    getQuestionNumber(userId, entry.question_id),
   ]);
 
   return NextResponse.json({
     entry: {
       questionId: entry.question_id,
+      questionNumber,
       lifeStageId: entry.life_stage_id,
       lifeStageKo: question?.life_stage_ko ?? "",
       lifeStageJa: question?.life_stage_ja ?? "",

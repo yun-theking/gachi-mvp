@@ -11,6 +11,7 @@ import {
   visibleStageIds,
   parseFields,
   serializeFields,
+  questionNumbers,
 } from "@/lib/stages";
 
 describe("question bank (single source: question_bank.json)", () => {
@@ -69,5 +70,21 @@ describe("fields", () => {
     expect(parseFields("")).toEqual([]);
     expect(parseFields("B,Z,I")).toEqual(["B", "I"]);
     expect(serializeFields(["I", "B"])).toBe("B,I");
+  });
+});
+
+describe("question numbers", () => {
+  it("common questions are 1-50 for everyone", () => {
+    const n = questionNumbers([]);
+    expect(n.get(10101)).toBe(1);
+    expect(n.get(11005)).toBe(50);
+    expect(n.size).toBe(50);
+  });
+
+  it("picked fields continue from 51, in interview order", () => {
+    const n = questionNumbers(["I", "B"]);
+    expect(n.get(20101)).toBe(51); // self-employed, first question
+    expect(n.get(20801)).toBe(59); // military, first question
+    expect(n.size).toBe(66);
   });
 });

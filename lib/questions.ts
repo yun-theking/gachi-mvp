@@ -1,6 +1,6 @@
 import { getDb } from "./db";
 import type { Lang } from "./auth";
-import { visibleStageIds, parseFields, serializeFields } from "./stages";
+import { visibleStageIds, parseFields, serializeFields, questionNumbers } from "./stages";
 
 export interface QuestionRow {
   id: number;
@@ -108,6 +108,26 @@ export async function getRemainingQuestions(
 
 export interface QuestionWithStatus extends QuestionRow {
   answered: boolean;
+  number: number | null;
+}
+
+/** The question shape API routes send to the browser. */
+export function toClientQuestion(q: QuestionRow, number: number | null) {
+  return {
+    id: q.id,
+    life_stage_id: q.life_stage_id,
+    life_stage_ko: q.life_stage_ko,
+    life_stage_ja: q.life_stage_ja,
+    question_ko: q.question_ko,
+    question_ja: q.question_ja,
+    number,
+  };
+}
+
+/** This question's number in this person's list (see questionNumbers), or
+ * null if it isn't in their list (e.g. a retired question). */
+export async function getQuestionNumber(userId: string, questionId: number): Promise<number | null> {
+  return questionNumbers((await getUserFields(userId)) ?? []).get(questionId) ?? null;
 }
 
 /** Every question this person can see (common + their picked fields), in
@@ -127,8 +147,9 @@ export async function getAllQuestionsWithStatus(userId: string): Promise<Questio
     `,
     args: [userId, ...stageIds],
   });
+  const numbers = questionNumbers((await getUserFields(userId)) ?? []);
   const rows = (result.rows as unknown as (QuestionRow & { answered: number | boolean })[]).map(
-    (r) => ({ ...r, answered: !!r.answered })
+    (r) => ({ ...r, answered: !!r.answered, number: numbers.get(r.id) ?? null })
   );
   // Order by interview order (common stages, then fields as picked).
   const order = new Map(stageIds.map((id, i) => [id, i]));
@@ -177,12 +198,17 @@ export async function saveEntry(entry: {
   questionJa: string;
   transcript: string;
   chapter: string;
+  /** How long the recording was. */
+  recordingSeconds?: number | null;
+  /** From the question appearing on screen to the answer being sent. */
+  timeOnQuestionSeconds?: number | null;
 }) {
   const db = await getDb();
   await db.execute({
     sql: `
-      INSERT INTO entries (user_id, question_id, life_stage_id, question_ko, question_ja, transcript, chapter)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO entries (user_id, question_id, life_stage_id, question_ko, question_ja, transcript, chapter,
+                           recording_seconds, time_on_question_seconds, answer_chars)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id, question_id) WHERE question_id IS NOT NULL
       DO UPDATE SET
         life_stage_id = excluded.life_stage_id,
@@ -190,6 +216,9 @@ export async function saveEntry(entry: {
         question_ja = excluded.question_ja,
         transcript = excluded.transcript,
         chapter = excluded.chapter,
+        recording_seconds = excluded.recording_seconds,
+        time_on_question_seconds = excluded.time_on_question_seconds,
+        answer_chars = excluded.answer_chars,
         created_at = datetime('now')
     `,
     args: [
@@ -200,6 +229,9 @@ export async function saveEntry(entry: {
       entry.questionJa,
       entry.transcript,
       entry.chapter,
+      entry.recordingSeconds ?? null,
+      entry.timeOnQuestionSeconds ?? null,
+      entry.transcript.length,
     ],
   });
 

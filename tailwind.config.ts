@@ -26,9 +26,10 @@ const config: Config = {
         "text-muted": "#75603C",
         danger: "#9C3B27",
       },
+      // Font order depends on the page language — see globals.css.
       fontFamily: {
-        serif: ["'Noto Serif KR'", "'Noto Serif JP'", "serif"],
-        sans: ["'Noto Sans KR'", "'Noto Sans JP'", "sans-serif"],
+        serif: ["var(--font-serif)"],
+        sans: ["var(--font-sans)"],
       },
     },
   },

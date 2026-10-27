@@ -57,6 +57,7 @@ describe("question visibility by field", () => {
     const all = await getAllQuestionsWithStatus(user);
     expect(all).toHaveLength(66);
     expect(all[50].id).toBe(FIRST_SELF_EMPLOYED_QUESTION);
+    expect(all.map((q) => q.number)).toEqual(Array.from({ length: 66 }, (_, i) => i + 1));
     expect((await getProgressSummary(user)).totalQuestions).toBe(66);
   });
 
@@ -161,5 +162,33 @@ describe("tutorial (per account, not per device)", () => {
     const user = await newUser();
     await answer(user, 10101);
     expect(await shouldShowOnboarding(user)).toBe(false);
+  });
+});
+
+describe("answer measurements", () => {
+  it("stores recording time, time on question and answer length, and overwrites on re-answer", async () => {
+    const { getDb } = await import("@/lib/db");
+    const user = await newUser();
+    const q = (await getQuestionById(10101))!;
+    const base = {
+      userId: user,
+      questionId: q.id,
+      lifeStageId: q.life_stage_id,
+      questionKo: q.question_ko,
+      questionJa: q.question_ja,
+      chapter: "챕터",
+    };
+    await saveEntry({ ...base, transcript: "짧은 답", recordingSeconds: 12, timeOnQuestionSeconds: 30 });
+    await saveEntry({ ...base, transcript: "조금 더 긴 답변", recordingSeconds: 45, timeOnQuestionSeconds: 70 });
+
+    const db = await getDb();
+    const row = (
+      await db.execute({
+        sql: "SELECT recording_seconds, time_on_question_seconds, answer_chars FROM entries WHERE user_id = ?",
+        args: [user],
+      })
+    ).rows[0];
+    expect([Number(row.recording_seconds), Number(row.time_on_question_seconds), Number(row.answer_chars)])
+      .toEqual([45, 70, "조금 더 긴 답변".length]);
   });
 });

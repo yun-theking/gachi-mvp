@@ -8,7 +8,7 @@ export const WARNING_AT_SECONDS = 570; // warn 30s before auto-stop
 interface Options {
   /** Called with the finished recording. `auto` is true when it was stopped
    * by the 10-minute limit rather than by the person. */
-  onRecorded: (blob: Blob, info: { auto: boolean }) => void;
+  onRecorded: (blob: Blob, info: { auto: boolean; durationSeconds: number }) => void;
 }
 
 /**
@@ -25,6 +25,7 @@ export function useRecorder({ onRecorded }: Options) {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startedAtRef = useRef(0);
   const onRecordedRef = useRef(onRecorded);
   onRecordedRef.current = onRecorded;
 
@@ -44,7 +45,8 @@ export function useRecorder({ onRecorded }: Options) {
       recorder.stream.getTracks().forEach((track) => track.stop());
       recorderRef.current = null;
       setIsRecording(false);
-      onRecordedRef.current(blob, { auto });
+      const durationSeconds = (Date.now() - startedAtRef.current) / 1000;
+      onRecordedRef.current(blob, { auto, durationSeconds });
     };
     recorder.stop();
   }, []);
@@ -86,6 +88,7 @@ export function useRecorder({ onRecorded }: Options) {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
     recorder.start(100);
+    startedAtRef.current = Date.now();
 
     setSeconds(0);
     setIsRecording(true);

@@ -19,6 +19,7 @@ export interface GenerateResult {
 
 export interface SavedEntry {
   questionId: number;
+  questionNumber: number | null;
   lifeStageId: number;
   lifeStageKo: string;
   lifeStageJa: string;
@@ -58,12 +59,21 @@ export async function transcribe(blob: Blob): Promise<string> {
   return data.text;
 }
 
-export async function generate(text: string, questionId: number | undefined) {
+export interface AnswerMetrics {
+  recordingSeconds: number;
+  timeOnQuestionSeconds: number;
+}
+
+export async function generate(
+  text: string,
+  questionId: number | undefined,
+  metrics: AnswerMetrics | null
+) {
   return getJson<GenerateResult>(
     await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, questionId }),
+      body: JSON.stringify({ text, questionId, ...metrics }),
     })
   );
 }

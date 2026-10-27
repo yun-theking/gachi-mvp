@@ -15,6 +15,7 @@ interface QuestionApiRow {
   question_ko: string;
   question_ja: string;
   answered: boolean;
+  number: number | null;
 }
 
 export default function QuestionListModal() {
@@ -90,6 +91,7 @@ export default function QuestionListModal() {
       life_stage_ja: q.life_stage_ja,
       question_ko: q.question_ko,
       question_ja: q.question_ja,
+      number: q.number,
       stagePosition: { position, total: stageList.length },
       answered: q.answered,
     });
@@ -157,6 +159,11 @@ export default function QuestionListModal() {
                             : "border-border bg-surface text-text hover:border-accent hover:bg-surface2"
                         }`}
                       >
+                        {q.number != null && (
+                          <span className="shrink-0 min-w-[2rem] h-8 px-1.5 rounded-full bg-surface2 border border-border text-sm font-bold text-accent-dark flex items-center justify-center">
+                            {q.number}
+                          </span>
+                        )}
                         <span className="flex-1 flex flex-col gap-1">
                           <span className="text-base leading-relaxed">{questionText}</span>
                           {q.answered && (

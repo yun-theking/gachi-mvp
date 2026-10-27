@@ -144,6 +144,17 @@ async function migrateSchema(db: Client) {
     await db.execute("ALTER TABLE questions ADD COLUMN active INTEGER NOT NULL DEFAULT 1");
   }
 
+  // Per-answer measurements, for tuning how many questions to ask and how
+  // long answers run. NULL on answers saved before this was added.
+  const entryColNames = (await db.execute("PRAGMA table_info(entries)")).rows.map(
+    (r) => (r as unknown as { name: string }).name
+  );
+  for (const col of ["recording_seconds", "time_on_question_seconds", "answer_chars"]) {
+    if (!entryColNames.includes(col)) {
+      await db.execute(`ALTER TABLE entries ADD COLUMN ${col} INTEGER`);
+    }
+  }
+
   const userColNames = (await db.execute("PRAGMA table_info(users)")).rows.map(
     (r) => (r as unknown as { name: string }).name
   );
