@@ -18,6 +18,10 @@ export interface GenerateResult {
   followUp: string | null;
   /** Note shown with the next question when it may overlap an earlier story. */
   bridge: string | null;
+  /** Section this answer just completed (every question answered), if any. */
+  completedStageId: number | null;
+  /** Consecutive days with an answer. */
+  streakDays: number;
   nextQuestion: BankQuestion | null;
   stagePosition: StagePos | null;
   stageAdvanced: boolean;
@@ -50,6 +54,7 @@ export async function fetchNextQuestion() {
     progress?: { totalAnswered: number; totalQuestions: number };
     needsFields?: boolean;
     showOnboarding?: boolean;
+    streakDays?: number;
   }>(await fetch("/api/next-question"));
 }
 

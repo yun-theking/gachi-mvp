@@ -41,7 +41,7 @@ export default function QuestionCard({ question }: Props) {
   const questionText = lang === "ja" ? question.question_ja : question.question_ko;
 
   return (
-    <div className="w-full max-w-xl bg-surface border border-border rounded-2xl p-6 flex flex-col gap-3">
+    <div className="w-full max-w-xl bg-surface border border-border rounded-2xl px-6 pt-5 pb-7 flex flex-col gap-4 shadow-[0_1px_0_#E2DDD3,0_10px_24px_-18px_rgba(31,28,24,0.35)]">
       <div className="flex items-center gap-2 flex-wrap">
         {canSpeak && (
           <button
@@ -55,13 +55,15 @@ export default function QuestionCard({ question }: Props) {
           </button>
         )}
         {question.number != null && (
-          <span className="text-sm font-bold text-bg bg-accent-dark rounded-full px-3 py-0.5">
+          <span className="text-sm font-bold text-white bg-text rounded-full px-3 py-0.5 tabular-nums">
             {t.questionNumberLabel(question.number)}
           </span>
         )}
         <span className="text-sm font-semibold text-accent-dark">{stageLabel}</span>
       </div>
-      <p className="font-bold text-text text-2xl leading-relaxed">{questionText}</p>
+      <p className="font-serif font-semibold text-text text-[1.6rem] leading-[1.55] tracking-[-0.01em]">
+        {questionText}
+      </p>
     </div>
   );
 }

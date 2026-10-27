@@ -29,7 +29,7 @@ export default function StageProgress({ currentStageId, stagePosition }: Props) 
       </p>
       <div className="w-full h-2 rounded-full bg-surface2 overflow-hidden">
         <div
-          className="h-full rounded-full bg-accent transition-all duration-500"
+          className="h-full rounded-full bg-accent-light transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>

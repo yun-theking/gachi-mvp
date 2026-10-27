@@ -330,6 +330,47 @@ export async function getProgressSummary(userId: string) {
   };
 }
 
+/** Answered vs. total for each section this person sees, in interview order
+ * — the "table of contents" of their book. A section is complete when every
+ * question in it has been answered (skipping doesn't count). */
+export async function getSectionProgress(
+  userId: string
+): Promise<{ stageId: number; answered: number; total: number }[]> {
+  const db = await getDb();
+  const stageIds = await getVisibleStageIds(userId);
+  const result = await db.execute({
+    sql: `SELECT q.life_stage_id AS stage, COUNT(*) AS total, COUNT(e.question_id) AS answered
+          FROM questions q
+          LEFT JOIN entries e ON e.question_id = q.id AND e.user_id = ?
+          WHERE q.active = 1 AND q.life_stage_id IN (${stageIds.map(() => "?").join(",")})
+          GROUP BY q.life_stage_id`,
+    args: [userId, ...stageIds],
+  });
+  const byStage = new Map(
+    result.rows.map((r) => [Number(r.stage), { answered: Number(r.answered), total: Number(r.total) }])
+  );
+  return stageIds.map((id) => ({ stageId: id, ...(byStage.get(id) ?? { answered: 0, total: 0 }) }));
+}
+
+/** Consecutive days (Korea/Japan time) with at least one answer, counting
+ * back from today — or from yesterday, so the streak doesn't look broken
+ * before today's first answer. */
+export async function getStreakDays(userId: string, now = new Date()): Promise<number> {
+  const db = await getDb();
+  const result = await db.execute({
+    sql: `SELECT DISTINCT date(created_at, '+9 hours') AS d FROM entries WHERE user_id = ? ORDER BY d DESC`,
+    args: [userId],
+  });
+  const days = new Set(result.rows.map((r) => String(r.d)));
+  const dayString = (offset: number) =>
+    new Date(now.getTime() + 9 * 3600_000 - offset * 86400_000).toISOString().slice(0, 10);
+  let start = days.has(dayString(0)) ? 0 : days.has(dayString(1)) ? 1 : -1;
+  if (start === -1) return 0;
+  let streak = 0;
+  while (days.has(dayString(start + streak))) streak++;
+  return streak;
+}
+
 /** Pick the next question to ask this user: first remaining question in their current stage. */
 export async function pickNextQuestion(userId: string): Promise<QuestionRow | null> {
   const stageId = await getCurrentStageId(userId);

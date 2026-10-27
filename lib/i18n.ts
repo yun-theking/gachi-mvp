@@ -41,6 +41,10 @@ export interface Dict {
   chapterLabelDefault: string;
   redoSavedNote: string;
   chapterReadyTitle: string;
+  stageCompleteTitle: (stage: string) => string;
+  streakLabel: (days: number) => string;
+  bookTitle: string;
+  bookStageDone: string;
   followUpLabel: string;
   followUpCount: (n: number, max: number) => string;
   followUpAction: string;
@@ -154,6 +158,10 @@ const dict: Record<Lang, Dict> = {
     chapterLabelDefault: "회고록 챕터",
     redoSavedNote: "답변이 수정됐어요",
     chapterReadyTitle: "회고록 한 편이 완성됐어요",
+    stageCompleteTitle: (stage: string) => `‘${stage}’ 장을 다 쓰셨어요`,
+    streakLabel: (days: number) => `${days}일째 이어서 이야기하고 계세요`,
+    bookTitle: "나의 책 목차",
+    bookStageDone: "완성",
     followUpLabel: "조금 더 여쭤볼게요",
     followUpCount: (n: number, max: number) => `추가 질문 ${n}/${max}`,
     followUpAction: "이어서 답하기",
@@ -268,6 +276,10 @@ const dict: Record<Lang, Dict> = {
     chapterLabelDefault: "回顧録の章",
     redoSavedNote: "回答を修正しました",
     chapterReadyTitle: "回顧録が1編できあがりました",
+    stageCompleteTitle: (stage: string) => `「${stage}」の章を書き終えました`,
+    streakLabel: (days: number) => `${days}日続けてお話しいただいています`,
+    bookTitle: "わたしの本の目次",
+    bookStageDone: "完成",
     followUpLabel: "もう少しお聞かせください",
     followUpCount: (n: number, max: number) => `追加の質問 ${n}/${max}`,
     followUpAction: "続けて答える",

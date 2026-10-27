@@ -6,6 +6,7 @@ import {
   getStagePosition,
   getUserFields,
   shouldShowOnboarding,
+  getStreakDays,
   toClientQuestion,
   getQuestionNumber,
 } from "@/lib/questions";
@@ -21,12 +22,13 @@ export async function GET(req: NextRequest) {
   // tab) get sent to it before starting.
   const needsFields = (await getUserFields(userId)) === null;
   const showOnboarding = await shouldShowOnboarding(userId);
+  const streakDays = await getStreakDays(userId);
 
   const question = await pickNextQuestion(userId);
   const progress = await getProgressSummary(userId);
 
   if (!question) {
-    return NextResponse.json({ done: true, nextQuestion: null, progress, stagePosition: null, needsFields, showOnboarding });
+    return NextResponse.json({ done: true, nextQuestion: null, progress, stagePosition: null, needsFields, showOnboarding, streakDays });
   }
 
   const stagePosition = await getStagePosition(question.life_stage_id, question.id);
@@ -38,5 +40,6 @@ export async function GET(req: NextRequest) {
     stagePosition,
     needsFields,
     showOnboarding,
+    streakDays,
   });
 }

@@ -11,20 +11,21 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        bg: "#FBF3E4",
-        surface: "#F7E9CE",
-        surface2: "#EDE1C8",
-        border: "#E7D5AE",
-        accent: "#A8632E",
-        "accent-light": "#C98A4E",
-        "accent-dark": "#7A481F",
-        text: "#2C2015",
-        // Darkened from the original design for elderly-friendly contrast:
-        // both now clear WCAG AA (4.5:1) against bg/surface/surface2, where
-        // the originals (#8A7355 / #B8A582) fell to ~4.1:1 and ~2.2:1.
-        "text-dim": "#6B5636",
-        "text-muted": "#75603C",
-        danger: "#9C3B27",
+        // Gachi palette, taken from the logo: ink black and its orange swoosh,
+        // on a clean paper white (the app is a book being written). Every
+        // text colour clears WCAG AA (4.5:1) on bg, surface and surface2;
+        // accent-light (the logo orange) is for graphics only, at >= 3:1.
+        bg: "#FBFAF7", // paper
+        surface: "#FFFFFF", // cards / pages
+        surface2: "#F2EFE9", // quiet fills
+        border: "#E2DDD3",
+        accent: "#AA4A08", // buttons, links (white text on it: 5.5:1)
+        "accent-light": "#D9680F", // logo orange: progress, arcs
+        "accent-dark": "#8A3C06", // emphasised text, banners
+        text: "#1F1C18", // ink
+        "text-dim": "#57524B",
+        "text-muted": "#6B655C",
+        danger: "#B42318",
       },
       // Font order depends on the page language — see globals.css.
       fontFamily: {

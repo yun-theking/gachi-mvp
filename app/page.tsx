@@ -14,6 +14,7 @@ import TranscriptReviewPanel from "@/components/TranscriptReviewPanel";
 import { useRecorder, WARNING_AT_SECONDS } from "@/hooks/useRecorder";
 import { speak, stopSpeaking, readAloudEnabled } from "@/hooks/useSpeech";
 import * as api from "@/lib/interviewApi";
+import { stageShortName } from "@/lib/stages";
 import type { SavedEntry, StagePos } from "@/lib/interviewApi";
 
 type ErrorKind = "mic" | "network" | "silence" | null;
@@ -56,6 +57,8 @@ export default function Home() {
   const [followUp, setFollowUp] = useState<{ question: string; index: number } | null>(null);
   const [pendingNext, setPendingNext] = useState<NextQuestion | null>(null);
   const [reaction, setReaction] = useState("");
+  const [completedStageId, setCompletedStageId] = useState<number | null>(null);
+  const [streakDays, setStreakDays] = useState(0);
 
   // Redo mode: re-answering an already-answered question (the most recent
   // one via "이전 질문", or any one picked from the full question list).
@@ -149,6 +152,7 @@ export default function Home() {
         }
         applyCurrentQuestion(data.nextQuestion, data.stagePosition);
         setShowOnboarding(!!data.showOnboarding);
+        setStreakDays(data.streakDays ?? 0);
       })
       .catch(() => setNoteText(t.networkErrorMessage))
       .finally(() => setInitialLoading(false));
@@ -165,6 +169,8 @@ export default function Home() {
     setLastChapter(data.chapter);
     setLastTranscript(data.transcript ?? text);
     setReaction(data.reaction ?? "");
+    setCompletedStageId(data.completedStageId ?? null);
+    setStreakDays(data.streakDays ?? 0);
     setJustCompleted(true);
     // A short buzz on phones that support it, so it's noticed without looking.
     try {
@@ -519,7 +525,11 @@ export default function Home() {
                 <IconCheck className="w-6 h-6" />
               </span>
               <span className="flex-1 flex flex-col gap-0.5">
-                <span className="text-lg font-bold">{t.chapterReadyTitle}</span>
+                <span className="text-lg font-bold">
+                  {completedStageId !== null
+                    ? t.stageCompleteTitle(stageShortName(lang, completedStageId))
+                    : t.chapterReadyTitle}
+                </span>
                 <span className="text-sm leading-relaxed opacity-90">{reaction || t.chapterReadyBody}</span>
               </span>
               <button
@@ -532,6 +542,12 @@ export default function Home() {
           )}
 
           <StageProgress currentStageId={currentStageId} stagePosition={stagePosition} />
+
+          {streakDays >= 2 && (
+            <p className="w-full max-w-xl -mt-2 text-sm font-semibold text-accent-dark">
+              {t.streakLabel(streakDays)}
+            </p>
+          )}
 
           {noteText && <p className="w-full max-w-xl text-sm text-accent-dark font-semibold">{noteText}</p>}
 

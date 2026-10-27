@@ -192,3 +192,33 @@ describe("answer measurements", () => {
       .toEqual([45, 70, "조금 더 긴 답변".length]);
   });
 });
+
+describe("progress rewards", () => {
+  it("section progress counts answers (not skips) per visible section", async () => {
+    const { getSectionProgress } = await import("@/lib/questions");
+    const user = await newUser();
+    await setUserFields(user, ["B"]);
+    await answer(user, 10101);
+    await answer(user, 10102);
+    await skipQuestion(user, 10103);
+    const progress = await getSectionProgress(user);
+    expect(progress).toHaveLength(11);
+    expect(progress[0]).toEqual({ stageId: 1, answered: 2, total: 5 });
+    expect(progress[10]).toEqual({ stageId: 102, answered: 0, total: 8 });
+  });
+
+  it("streak counts consecutive days ending today or yesterday (KST)", async () => {
+    const { getStreakDays } = await import("@/lib/questions");
+    const { getDb } = await import("@/lib/db");
+    const user = await newUser();
+    const db = await getDb();
+    // Answers at 10:00 KST on Mar 1, 2 and 3 (stored as UTC).
+    for (const [qid, utc] of [[10101, "2026-03-01 01:00:00"], [10102, "2026-03-02 01:00:00"], [10103, "2026-03-03 01:00:00"]] as const) {
+      await answer(user, qid);
+      await db.execute({ sql: "UPDATE entries SET created_at = ? WHERE user_id = ? AND question_id = ?", args: [utc, user, qid] });
+    }
+    expect(await getStreakDays(user, new Date("2026-03-03T12:00:00Z"))).toBe(3);
+    expect(await getStreakDays(user, new Date("2026-03-04T05:00:00Z"))).toBe(3); // yesterday still counts
+    expect(await getStreakDays(user, new Date("2026-03-06T05:00:00Z"))).toBe(0);
+  });
+});

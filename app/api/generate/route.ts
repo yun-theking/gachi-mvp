@@ -10,6 +10,8 @@ import {
   getStagePosition,
   getRecentEntries,
   getEntryByQuestionId,
+  getSectionProgress,
+  getStreakDays,
   toClientQuestion,
   getQuestionNumber,
 } from "@/lib/questions";
@@ -147,6 +149,12 @@ export async function POST(req: NextRequest) {
       followUpsLeft
     );
 
+    // Was this question already answered? (Then finishing its section now
+    // isn't a new milestone.)
+    const alreadyAnswered =
+      previousEntry !== null ||
+      (askedQuestion ? (await getEntryByQuestionId(userId, askedQuestion.id)) !== null : true);
+
     // Persist this turn now that we have the generated chapter. Store both
     // language versions of the question text regardless of which language
     // the person is using, so switching languages later still shows correctly.
@@ -165,6 +173,13 @@ export async function POST(req: NextRequest) {
         toSeconds(timeOnQuestionSeconds)
       ),
     });
+
+    // Did this answer complete its section (every question answered)?
+    const sectionNow = (await getSectionProgress(userId)).find((p) => p.stageId === lifeStageId);
+    const completedStageId =
+      !alreadyAnswered && sectionNow && sectionNow.total > 0 && sectionNow.answered === sectionNow.total
+        ? lifeStageId
+        : null;
 
     // Resolve the actual next question. Recompute *after* saving, since saving just
     // consumed one question from the pool and may have advanced the stage.
@@ -192,6 +207,8 @@ export async function POST(req: NextRequest) {
         stageBefore !== null && stageAfter !== null && stageAfter !== stageBefore,
       done: stageAfter === null,
       progress: await getProgressSummary(userId),
+      completedStageId,
+      streakDays: await getStreakDays(userId),
     });
   } catch (err) {
     console.error("[generate]", err);

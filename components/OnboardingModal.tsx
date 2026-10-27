@@ -52,7 +52,7 @@ function ArchiveIllustration() {
   return (
     <div className="flex flex-col items-center gap-3 py-2">
       <div className="w-full max-w-[280px] bg-surface border border-border rounded-2xl p-4 flex flex-col gap-2">
-        <span className="text-xs tracking-widest uppercase text-accent-dark">
+        <span className="text-sm font-semibold text-accent-dark">
           {t.chapterLabelDefault}
         </span>
         <p className="font-serif text-text text-sm leading-7">{t.onboardingSampleChapter}</p>

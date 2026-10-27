@@ -22,20 +22,20 @@ export default function ChapterPanel({
   return (
     <div className="panel-enter w-full max-w-xl bg-surface border border-border rounded-2xl p-6 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
-        <span className="text-xs tracking-widest uppercase text-accent-dark flex items-center gap-2 before:content-[''] before:block before:w-5 before:h-px before:bg-accent-dark">
+        <span className="text-sm font-semibold text-accent-dark">
           {label ?? t.chapterLabelDefault}
         </span>
         {meta && <span className="text-xs text-text-muted">{meta}</span>}
       </div>
 
       {questionKo && (
-        <p className="text-sm text-accent-dark italic leading-relaxed">
+        <p className="text-sm text-accent-dark leading-relaxed">
           Q. {questionKo}
         </p>
       )}
 
       {transcript && (
-        <p className="text-base text-text-dim italic leading-relaxed border-l-2 border-border pl-3">
+        <p className="text-base text-text-dim leading-relaxed border-l-2 border-border pl-3">
           {transcript}
         </p>
       )}
