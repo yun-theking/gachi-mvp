@@ -41,6 +41,13 @@ export interface Dict {
   chapterLabelDefault: string;
   redoSavedNote: string;
   chapterReadyTitle: string;
+  reviewTitle: string;
+  reviewHint: string;
+  reviewCorrectedLabel: string;
+  reviewUncertainLabel: string;
+  reviewUncertainHint: string;
+  reviewConfirm: string;
+  reviewRerecord: string;
   questionNumberLabel: (n: number) => string;
   chapterReadyBody: string;
   chapterReadyView: string;
@@ -70,8 +77,8 @@ export interface Dict {
   fontScaleLarge: string;
   fieldsTitle: string;
   fieldsSubtitle: string;
-  fieldsMultiHint: string;
-  fieldsDone: (count: number) => string;
+  fieldsSingleHint: string;
+  fieldsDone: string;
   fieldsNone: string;
   fieldsCancel: string;
   settingsFieldsLabel: string;
@@ -137,6 +144,13 @@ const dict: Record<Lang, Dict> = {
     chapterLabelDefault: "회고록 챕터",
     redoSavedNote: "답변이 수정됐어요",
     chapterReadyTitle: "회고록 한 편이 완성됐어요",
+    reviewTitle: "이렇게 들었어요",
+    reviewHint: "틀린 부분이 있으면 글을 눌러서 직접 고쳐주세요. 맞으면 아래 버튼을 눌러주세요.",
+    reviewCorrectedLabel: "자동으로 고친 부분",
+    reviewUncertainLabel: "맞는지 확인해주세요",
+    reviewUncertainHint: "단어를 누르면 글에서 그 부분이 선택돼요.",
+    reviewConfirm: "이대로 회고록 만들기",
+    reviewRerecord: "다시 녹음하기",
     questionNumberLabel: (n: number) => `질문 ${n}`,
     chapterReadyBody: "방금 쓴 글은 아래에서 읽어보실 수 있어요. 다음 질문도 준비됐어요.",
     chapterReadyView: "읽어보기",
@@ -168,9 +182,9 @@ const dict: Record<Lang, Dict> = {
     fontScaleMedium: "중",
     fontScaleLarge: "대",
     fieldsTitle: "어떤 일을 해오셨나요?",
-    fieldsSubtitle: "해당하는 분야나 경험을 모두 골라주세요. 고르신 분야에 맞는 질문이 추가돼요. 나중에 설정에서 바꿀 수 있어요.",
-    fieldsMultiHint: "해당하는 것 모두 선택 (여러 개 가능)",
-    fieldsDone: (count: number) => `${count}개 선택 완료`,
+    fieldsSubtitle: "가장 오래 해오셨거나 가장 중요하다고 느끼시는 것을 골라주세요. 고르신 분야에 맞는 질문이 추가돼요. 나중에 설정에서 바꿀 수 있어요.",
+    fieldsSingleHint: "하나만 선택",
+    fieldsDone: "선택 완료",
     fieldsNone: "해당 없음으로 계속하기",
     fieldsCancel: "바꾸지 않고 돌아가기",
     settingsFieldsLabel: "나의 분야",
@@ -234,6 +248,13 @@ const dict: Record<Lang, Dict> = {
     chapterLabelDefault: "回顧録の章",
     redoSavedNote: "回答を修正しました",
     chapterReadyTitle: "回顧録が1編できあがりました",
+    reviewTitle: "このように聞き取りました",
+    reviewHint: "間違いがあれば、文章を押して直接直してください。合っていれば下のボタンを押してください。",
+    reviewCorrectedLabel: "自動で直した箇所",
+    reviewUncertainLabel: "合っているか確認してください",
+    reviewUncertainHint: "語を押すと、文中のその箇所が選択されます。",
+    reviewConfirm: "この内容で回顧録を作る",
+    reviewRerecord: "録音し直す",
     questionNumberLabel: (n: number) => `質問 ${n}`,
     chapterReadyBody: "書き上がった文章は下で読めます。次の質問も準備できています。",
     chapterReadyView: "読む",
@@ -265,9 +286,9 @@ const dict: Record<Lang, Dict> = {
     fontScaleMedium: "中",
     fontScaleLarge: "大",
     fieldsTitle: "どのようなお仕事・ご経験をされてきましたか？",
-    fieldsSubtitle: "当てはまる分野やご経験をすべて選んでください。選んだ分野に合わせた質問が追加されます。あとから設定で変更できます。",
-    fieldsMultiHint: "当てはまるものをすべて選択（複数可）",
-    fieldsDone: (count: number) => `${count}件を選んで次へ`,
+    fieldsSubtitle: "最も長く続けてこられたもの、または最も大切だと感じるものを選んでください。選んだ分野に合わせた質問が追加されます。あとから設定で変更できます。",
+    fieldsSingleHint: "1つだけ選択",
+    fieldsDone: "選んで次へ",
     fieldsNone: "当てはまらないので次へ",
     fieldsCancel: "変更せずに戻る",
     settingsFieldsLabel: "あなたの分野",

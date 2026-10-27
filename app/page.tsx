@@ -10,6 +10,7 @@ import { IconChevronLeft, IconCheck } from "@/components/icons";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useQuestionSelection } from "@/components/QuestionSelectionProvider";
 import OnboardingModal from "@/components/OnboardingModal";
+import TranscriptReviewPanel from "@/components/TranscriptReviewPanel";
 import { useRecorder, WARNING_AT_SECONDS } from "@/hooks/useRecorder";
 import * as api from "@/lib/interviewApi";
 import type { SavedEntry, StagePos } from "@/lib/interviewApi";
@@ -35,6 +36,9 @@ export default function Home() {
   const [noteText, setNoteText] = useState("");
   // A chapter was just written: show the "done" banner until the next action.
   const [justCompleted, setJustCompleted] = useState(false);
+  // What speech-to-text heard, waiting for the person to confirm/edit it.
+  const [review, setReview] = useState<api.TranscriptReview | null>(null);
+  const [reviewText, setReviewText] = useState("");
   const chapterRef = useRef<HTMLDivElement>(null);
 
   // Redo mode: re-answering an already-answered question (the most recent
@@ -146,9 +150,9 @@ export default function Home() {
     setErrorKind(null);
     setStep("transcribing");
 
-    let text: string;
+    let heard: Awaited<ReturnType<typeof api.transcribe>>;
     try {
-      text = await api.transcribe(blob);
+      heard = await api.transcribe(blob, activeQuestionId);
     } catch {
       // Audio is kept in pendingBlobRef — "다시 보내기" retries this exact
       // recording without asking the person to talk again.
@@ -156,15 +160,32 @@ export default function Home() {
       return;
     }
 
-    if (!text || text.trim().length < 2) {
+    if (!heard.text || heard.text.trim().length < 2) {
       pendingBlobRef.current = null; // nothing useful to resend
       showError("silence", t.silenceMessage);
       return;
     }
 
+    // Show what was heard; the chapter is written only after they confirm.
+    setReview(heard.review);
+    setReviewText(heard.review.text);
+    setStep("review");
+  };
+
+  const confirmReview = async () => {
+    const text = reviewText.trim();
+    if (text.length < 2) return;
+    setReview(null);
     pendingTextRef.current = text;
     setLastTranscript(text);
     await runGenerate(text);
+  };
+
+  const rerecordFromReview = () => {
+    setReview(null);
+    pendingBlobRef.current = null;
+    pendingTextRef.current = null;
+    setStep("idle");
   };
 
   const recorder = useRecorder({
@@ -216,6 +237,7 @@ export default function Home() {
     async (picked: NonNullable<typeof pendingSelection>) => {
       recorder.cancel();
       setJustCompleted(false);
+      setReview(null);
       pendingBlobRef.current = null;
       pendingTextRef.current = null;
       clearError();
@@ -272,6 +294,7 @@ export default function Home() {
   };
 
   const cancelRedo = () => {
+    setReview(null);
     exitRedo();
     setStep("idle");
   };
@@ -291,6 +314,16 @@ export default function Home() {
 
   // ── Render ───────────────────────────────────────────────────────────────
   const busy = step === "transcribing" || step === "generating";
+  const inReview = step === "review" && review !== null;
+  const ReviewBlock = review && (
+    <TranscriptReviewPanel
+      review={review}
+      text={reviewText}
+      onChange={setReviewText}
+      onConfirm={confirmReview}
+      onRerecord={rerecordFromReview}
+    />
+  );
   const showResendUI = step === "error" && errorKind === "network";
 
   const statusText = (() => {
@@ -379,7 +412,9 @@ export default function Home() {
             />
           )}
 
-          {showResendUI ? (
+          {inReview ? (
+            ReviewBlock
+          ) : showResendUI ? (
             ResendBlock
           ) : (
             <RecordButton
@@ -429,7 +464,9 @@ export default function Home() {
 
           <QuestionCard question={currentQuestion} />
 
-          {showResendUI ? (
+          {inReview ? (
+            ReviewBlock
+          ) : showResendUI ? (
             ResendBlock
           ) : (
             <RecordButton
@@ -445,8 +482,8 @@ export default function Home() {
           <QuestionActionsRow
             onPrevious={handlePrevious}
             onSkip={handleSkip}
-            previousDisabled={busy || loadingPrevious}
-            skipDisabled={busy || !currentQuestion}
+            previousDisabled={busy || inReview || loadingPrevious}
+            skipDisabled={busy || inReview || !currentQuestion}
           />
 
           {lastChapter && (

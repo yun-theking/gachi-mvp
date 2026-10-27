@@ -13,6 +13,7 @@ import {
   getQuestionNumber,
 } from "@/lib/questions";
 import { USER_COOKIE, LANG_COOKIE, DEFAULT_LANG, isValidLang, type Lang } from "@/lib/auth";
+import { chapterPrompt, chapterMaxTokens } from "@/lib/prompts";
 
 /** How many recent answers to show the model, and how much of each. */
 const RECENT_CONTEXT_COUNT = 4;
@@ -22,60 +23,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const PROMPTS: Record<
-  Lang,
-  {
-    instructions: (askedText: string, candidateList: string, recentAnswers: string) => string;
-    noAnswerText: string;
-  }
-> = {
-  ko: {
-    noAnswerText: "(자유 답변)",
-    instructions: (askedText, candidateList, recentAnswers) => `당신은 시니어의 삶의 이야기를 아름다운 회고록으로 엮어주는 인터뷰 작가입니다.
-사용자가 방금 아래 질문에 음성으로 답변했습니다.
-
-[방금 받은 질문]
-${askedText}
-
-[최근 답변 기록 (오래된 순)]
-${recentAnswers || "(아직 없음)"}
-
-이 답변을 바탕으로 두 가지를 JSON으로 반환하세요.
-
-1. chapter: 사용자의 답변을 1인칭 회고록 챕터 초안으로 작성. 한국어로, 문학적이고 따뜻한 문체로 200~400자.
-2. next_question_id: 아래 후보 질문 목록 중, 지금까지의 대화 흐름상 다음으로 묻기에 가장 자연스러운 질문의 id 하나.
-   반드시 후보 목록에 있는 id 중 하나만 그대로 선택하세요. 질문 문구를 새로 짓거나 바꾸지 마세요.
-
-[다음 질문 후보]
-${candidateList || "(이 생애주기의 후보가 모두 소진되었습니다. next_question_id는 null로 응답하세요.)"}
-
-반드시 아래 JSON 형식만 출력하세요. 다른 텍스트는 절대 포함하지 마세요.
-{"chapter": "...", "next_question_id": <숫자 또는 null>}`,
-  },
-  ja: {
-    noAnswerText: "（自由回答）",
-    instructions: (askedText, candidateList, recentAnswers) => `あなたはシニアの人生の物語を美しい回顧録に編み上げるインタビュー作家です。
-ユーザーがたった今、下記の質問に音声で回答しました。
-
-[たった今受けた質問]
-${askedText}
-
-[最近の回答履歴（古い順）]
-${recentAnswers || "（まだありません）"}
-
-この回答をもとに、次の2つをJSONで返してください。
-
-1. chapter: ユーザーの回答をもとにした一人称の回顧録の章の下書き。日本語で、文学的で温かみのある文体で200〜400字程度。
-2. next_question_id: 下記の候補質問リストの中から、これまでの会話の流れ上、次に尋ねるのに最も自然な質問のidを1つ選んでください。
-   必ず候補リストにあるidの中から1つをそのまま選んでください。質問文を新しく作ったり変更したりしないでください。
-
-[次の質問候補]
-${candidateList || "（このライフステージの候補はすべて消化されました。next_question_idはnullで応答してください。）"}
-
-必ず以下のJSON形式のみを出力してください。他のテキストは一切含めないでください。
-{"chapter": "...", "next_question_id": <数値またはnull>}`,
-  },
-};
+/** Stand-in "question" for an answer not tied to a bank question. */
+const NO_ANSWER_TEXT: Record<Lang, string> = { ko: "(자유 답변)", ja: "（自由回答）" };
 
 /** Client-reported durations: whole seconds within a sane range, else null. */
 function toSeconds(v: unknown): number | null {
@@ -107,9 +56,8 @@ export async function POST(req: NextRequest) {
     const lifeStageId =
       askedQuestion?.life_stage_id ?? (await getCurrentStageId(userId)) ?? 1;
 
-    const prompt = PROMPTS[lang];
-    const askedKo = askedQuestion?.question_ko ?? prompt.noAnswerText;
-    const askedJa = askedQuestion?.question_ja ?? prompt.noAnswerText;
+    const askedKo = askedQuestion?.question_ko ?? NO_ANSWER_TEXT[lang];
+    const askedJa = askedQuestion?.question_ja ?? NO_ANSWER_TEXT[lang];
     const askedText = lang === "ja" ? askedJa : askedKo;
 
     const stageBefore = await getCurrentStageId(userId);
@@ -141,7 +89,11 @@ export async function POST(req: NextRequest) {
       })
       .join("\n");
 
-    const systemPrompt = prompt.instructions(askedText, candidateList, recentAnswers);
+    const systemPrompt = chapterPrompt(lang, {
+      asked: askedText,
+      recent: recentAnswers,
+      candidates: candidateList,
+    });
 
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
       { role: "system", content: systemPrompt },
@@ -153,7 +105,9 @@ export async function POST(req: NextRequest) {
       model: "gpt-4o",
       messages,
       response_format: { type: "json_object" },
-      max_tokens: 1024,
+      max_tokens: chapterMaxTokens(text),
+      // Low temperature: stick to what was said rather than embellish.
+      temperature: 0.3,
     });
 
     const raw = response.choices[0].message.content ?? "{}";

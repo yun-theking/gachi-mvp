@@ -50,13 +50,27 @@ export async function markOnboardingSeen() {
   await getJson<{ ok: true }>(await fetch("/api/settings/onboarding", { method: "POST" }));
 }
 
-export async function transcribe(blob: Blob): Promise<string> {
+export interface TranscriptReview {
+  text: string;
+  corrections: { from: string; to: string }[];
+  uncertain: string[];
+}
+
+/** Speech-to-text plus the review pass (obvious fixes + doubtful words). */
+export async function transcribe(
+  blob: Blob,
+  questionId: number | undefined
+): Promise<{ text: string; review: TranscriptReview }> {
   const formData = new FormData();
   formData.append("audio", blob, "recording.webm");
-  const data = await getJson<{ text: string }>(
+  if (questionId) formData.append("questionId", String(questionId));
+  const data = await getJson<{ text: string; review?: TranscriptReview }>(
     await fetch("/api/transcribe", { method: "POST", body: formData })
   );
-  return data.text;
+  return {
+    text: data.text,
+    review: data.review ?? { text: data.text, corrections: [], uncertain: [] },
+  };
 }
 
 export interface AnswerMetrics {

@@ -1,7 +1,14 @@
 import { IconMic } from "./icons";
 import { useLanguage } from "./LanguageProvider";
 
-export type Step = "idle" | "recording" | "transcribing" | "generating" | "done" | "error";
+export type Step =
+  | "idle"
+  | "recording"
+  | "transcribing"
+  | "review" // checking what was heard, before the chapter is written
+  | "generating"
+  | "done"
+  | "error";
 
 interface Props {
   step: Step;

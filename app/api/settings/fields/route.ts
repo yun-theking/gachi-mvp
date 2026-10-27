@@ -10,14 +10,14 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ fields: await getUserFields(userId) });
 }
 
-/** Saves the person's occupation/experience fields. An empty list is valid
- * ("none of these"): it only shows the common questions. */
+/** Saves the person's occupation/experience field: one at most. An empty
+ * list is valid ("none of these"): it only shows the common questions. */
 export async function POST(req: NextRequest) {
   const userId = req.cookies.get(USER_COOKIE)?.value;
   if (!userId) return apiError("UNAUTHORIZED", 401);
 
   const { fields } = (await req.json()) as { fields?: unknown };
-  if (!Array.isArray(fields) || !fields.every(isValidFieldCode)) {
+  if (!Array.isArray(fields) || fields.length > 1 || !fields.every(isValidFieldCode)) {
     return apiError("INVALID_INPUT", 400);
   }
 
