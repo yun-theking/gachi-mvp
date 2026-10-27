@@ -238,8 +238,13 @@ export async function saveEntry(entry: {
     ],
   });
 
-  // Redoing a question that was previously skipped should un-skip it.
+  // Redoing a question that was previously skipped should un-skip it, and
+  // any illustration of the old answer no longer matches.
   if (entry.questionId !== null) {
+    await db.execute({
+      sql: "DELETE FROM chapter_images WHERE user_id = ? AND question_id = ?",
+      args: [entry.userId, entry.questionId],
+    });
     await db.execute({
       sql: "DELETE FROM skipped_questions WHERE user_id = ? AND question_id = ?",
       args: [entry.userId, entry.questionId],
@@ -379,6 +384,54 @@ export async function pickNextQuestion(userId: string): Promise<QuestionRow | nu
   return remaining[0] ?? null;
 }
 
+// ── Optional features (lib/features.ts) ────────────────────────────────────
+
+export async function getUserSettings(
+  userId: string
+): Promise<{ dataConsent: boolean; appearance: string }> {
+  const db = await getDb();
+  const row = (
+    await db.execute({ sql: "SELECT data_consent, appearance FROM users WHERE id = ?", args: [userId] })
+  ).rows[0] as unknown as { data_consent: number; appearance: string | null } | undefined;
+  return { dataConsent: Number(row?.data_consent ?? 0) === 1, appearance: row?.appearance ?? "" };
+}
+
+export async function setDataConsent(userId: string, consent: boolean) {
+  const db = await getDb();
+  await db.execute({
+    sql: "UPDATE users SET data_consent = ?, data_consent_at = datetime('now') WHERE id = ?",
+    args: [consent ? 1 : 0, userId],
+  });
+}
+
+export async function setAppearance(userId: string, appearance: string) {
+  const db = await getDb();
+  await db.execute({
+    sql: "UPDATE users SET appearance = ? WHERE id = ?",
+    args: [appearance.trim().slice(0, 100) || null, userId],
+  });
+}
+
+export async function getChapterImage(userId: string, questionId: number): Promise<string | null> {
+  const db = await getDb();
+  const row = (
+    await db.execute({
+      sql: "SELECT image FROM chapter_images WHERE user_id = ? AND question_id = ?",
+      args: [userId, questionId],
+    })
+  ).rows[0] as unknown as { image: string } | undefined;
+  return row?.image ?? null;
+}
+
+export async function saveChapterImage(userId: string, questionId: number, image: string) {
+  const db = await getDb();
+  await db.execute({
+    sql: `INSERT INTO chapter_images (user_id, question_id, image) VALUES (?, ?, ?)
+          ON CONFLICT(user_id, question_id) DO UPDATE SET image = excluded.image, created_at = datetime('now')`,
+    args: [userId, questionId, image],
+  });
+}
+
 /** Register a personal ID on first login, or update its language preference on
  * subsequent logins (no-op on the id itself if it already exists). */
 export async function registerUser(userId: string, language: Lang) {
@@ -470,6 +523,7 @@ export async function renameUser(oldId: string, newId: string) {
         sql: "UPDATE skipped_questions SET user_id = ? WHERE user_id = ?",
         args: [newId, oldId],
       },
+      { sql: "UPDATE chapter_images SET user_id = ? WHERE user_id = ?", args: [newId, oldId] },
     ],
     "write"
   );

@@ -3,8 +3,11 @@ import { LANG_COOKIE, DEFAULT_LANG, isValidLang, FONT_SCALE_COOKIE, DEFAULT_FONT
 import { getDict } from "@/lib/i18n";
 import FontScaleToggle from "@/components/FontScaleToggle";
 import ReadAloudToggle from "@/components/ReadAloudToggle";
+import ConsentToggle from "@/components/ConsentToggle";
+import AppearanceInput from "@/components/AppearanceInput";
+import { DATA_CONSENT_ENABLED, IMAGES_ENABLED } from "@/lib/features";
 import { USER_COOKIE } from "@/lib/auth";
-import { getUserFields } from "@/lib/questions";
+import { getUserFields, getUserSettings } from "@/lib/questions";
 import { FIELD_SECTIONS } from "@/lib/stages";
 
 export default async function SettingsPage() {
@@ -16,6 +19,7 @@ export default async function SettingsPage() {
   const fontScale = isValidFontScale(fontScaleCookie) ? fontScaleCookie : DEFAULT_FONT_SCALE;
   const userId = store.get(USER_COOKIE)?.value;
   const fields = (userId ? await getUserFields(userId) : null) ?? [];
+  const settings = userId ? await getUserSettings(userId) : { dataConsent: false, appearance: "" };
   const fieldNames = FIELD_SECTIONS.filter((f) => fields.includes(f.fieldCode!)).map(
     (f) => f.shortName[lang]
   );
@@ -28,6 +32,8 @@ export default async function SettingsPage() {
       </div>
       <FontScaleToggle initialScale={fontScale} />
       <ReadAloudToggle />
+      {IMAGES_ENABLED && <AppearanceInput initial={settings.appearance} />}
+      {DATA_CONSENT_ENABLED && <ConsentToggle initial={settings.dataConsent} />}
       <div className="w-full max-w-xs flex flex-col items-center gap-2">
         <p className="text-sm font-semibold text-text">{t.settingsFieldsLabel}</p>
         <p className="text-base text-text-dim text-center">

@@ -104,6 +104,7 @@ export default async function ArchivePage() {
                     label={new Date(entry.created_at).toLocaleDateString(dateLocale)}
                     questionKo={lang === "ja" ? entry.question_ja || entry.question_ko : entry.question_ko}
                     chapter={entry.chapter}
+                    questionId={entry.question_id}
                   />
                 ))}
               </section>

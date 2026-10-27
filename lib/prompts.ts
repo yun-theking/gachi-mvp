@@ -229,3 +229,23 @@ export function appendFollowUp(lang: Lang, previous: string, question: string, a
 export function chapterMaxTokens(answer: string): number {
   return Math.min(4000, 300 + Math.ceil(answer.length * 1.5));
 }
+
+// ── Illustrations (optional feature) ───────────────────────────────────────
+
+/**
+ * Turns a memoir chapter into an image prompt. Written in English (image
+ * models follow it best). Keeps to what the chapter says, avoids text in
+ * the image and detailed faces of real people.
+ */
+export function illustrationPrompt(appearance: string): string {
+  return `You turn a passage from an older person's memoir into a prompt for one illustration.
+
+Rules:
+- Show one scene from the passage, using only places, objects, people and time-period details the passage mentions or clearly implies. Do not add events.
+- Style: soft, warm hand-drawn watercolour illustration, calm and nostalgic, muted colours.
+- No text, letters, signs with writing, or numbers anywhere in the image.
+- People appear small in the scene or seen from behind; no detailed faces.
+${appearance.trim() ? `- The narrator, when shown, looks like this: ${appearance.trim()}` : ""}
+
+Return JSON only: {"prompt": "the image prompt, under 120 words"}`;
+}

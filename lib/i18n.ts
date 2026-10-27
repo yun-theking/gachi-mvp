@@ -41,6 +41,19 @@ export interface Dict {
   chapterLabelDefault: string;
   redoSavedNote: string;
   chapterReadyTitle: string;
+  consentTitle: string;
+  consentBody: string;
+  consentYes: string;
+  consentNo: string;
+  appearanceTitle: string;
+  appearanceHint: string;
+  appearancePlaceholder: string;
+  appearanceSave: string;
+  appearanceSaved: string;
+  illustrate: string;
+  illustrating: string;
+  illustrationAlt: string;
+  illustrateFailed: string;
   stageCompleteTitle: (stage: string) => string;
   streakLabel: (days: number) => string;
   bookTitle: string;
@@ -158,6 +171,19 @@ const dict: Record<Lang, Dict> = {
     chapterLabelDefault: "회고록 챕터",
     redoSavedNote: "답변이 수정됐어요",
     chapterReadyTitle: "회고록 한 편이 완성됐어요",
+    consentTitle: "서비스 개선에 답변 사용",
+    consentBody: "동의하시면 남겨주신 답변을 이름과 번호를 뺀 채로, 질문과 글쓰기 품질을 개선하는 데 쓸 수 있어요. 언제든 여기서 바꾸실 수 있고, 동의하지 않아도 모든 기능을 그대로 쓰실 수 있어요.",
+    consentYes: "동의함",
+    consentNo: "동의 안 함",
+    appearanceTitle: "그림 속 내 모습",
+    appearanceHint: "회고록 그림에 나올 내 모습을 짧게 적어주세요. 비워두셔도 돼요.",
+    appearancePlaceholder: "예: 단발머리에 안경을 쓴 여성",
+    appearanceSave: "저장",
+    appearanceSaved: "저장했어요",
+    illustrate: "그림으로 보기",
+    illustrating: "그림을 그리고 있어요. 30초 정도 걸려요…",
+    illustrationAlt: "이 이야기를 그린 그림",
+    illustrateFailed: "그림을 만들지 못했어요. 잠시 후 다시 눌러주세요.",
     stageCompleteTitle: (stage: string) => `‘${stage}’ 장을 다 쓰셨어요`,
     streakLabel: (days: number) => `${days}일째 이어서 이야기하고 계세요`,
     bookTitle: "나의 책 목차",
@@ -276,6 +302,19 @@ const dict: Record<Lang, Dict> = {
     chapterLabelDefault: "回顧録の章",
     redoSavedNote: "回答を修正しました",
     chapterReadyTitle: "回顧録が1編できあがりました",
+    consentTitle: "サービス改善への回答の利用",
+    consentBody: "同意いただくと、お名前と番号を除いたうえで、回答を質問や文章の品質改善に使わせていただきます。いつでもここで変更でき、同意しなくてもすべての機能をそのままお使いいただけます。",
+    consentYes: "同意する",
+    consentNo: "同意しない",
+    appearanceTitle: "絵の中のわたし",
+    appearanceHint: "回顧録の絵に描かれるご自身の姿を短く書いてください。空欄でも構いません。",
+    appearancePlaceholder: "例：短い白髪で眼鏡をかけた男性",
+    appearanceSave: "保存",
+    appearanceSaved: "保存しました",
+    illustrate: "絵で見る",
+    illustrating: "絵を描いています。30秒ほどかかります…",
+    illustrationAlt: "このお話を描いた絵",
+    illustrateFailed: "絵を作れませんでした。しばらくしてからもう一度押してください。",
     stageCompleteTitle: (stage: string) => `「${stage}」の章を書き終えました`,
     streakLabel: (days: number) => `${days}日続けてお話しいただいています`,
     bookTitle: "わたしの本の目次",

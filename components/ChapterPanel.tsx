@@ -1,6 +1,8 @@
 "use client";
 
 import { useLanguage } from "./LanguageProvider";
+import ChapterIllustration from "./ChapterIllustration";
+import { IMAGES_ENABLED } from "@/lib/features";
 
 interface Props {
   label?: string;
@@ -8,6 +10,8 @@ interface Props {
   transcript?: string;
   chapter: string;
   meta?: string;
+  /** Lets an illustration be drawn for this answer, when images are on. */
+  questionId?: number | null;
 }
 
 export default function ChapterPanel({
@@ -16,6 +20,7 @@ export default function ChapterPanel({
   transcript,
   chapter,
   meta,
+  questionId,
 }: Props) {
   const { dict: t } = useLanguage();
 
@@ -43,6 +48,7 @@ export default function ChapterPanel({
       <p className="font-serif text-text text-lg leading-8 whitespace-pre-wrap">
         {chapter}
       </p>
+      {IMAGES_ENABLED && questionId ? <ChapterIllustration questionId={questionId} /> : null}
     </div>
   );
 }

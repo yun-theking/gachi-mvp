@@ -82,6 +82,16 @@ async function createSchema(db: Client) {
       window_start TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- One generated illustration per answer (only if images are enabled).
+    -- Removed whenever the answer is rewritten, since it no longer matches.
+    CREATE TABLE IF NOT EXISTS chapter_images (
+      user_id TEXT NOT NULL,
+      question_id INTEGER NOT NULL,
+      image TEXT NOT NULL, -- data: URL (compressed webp)
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (user_id, question_id)
+    );
+
     CREATE TABLE IF NOT EXISTS skipped_questions (
       user_id TEXT NOT NULL,
       question_id INTEGER NOT NULL,
@@ -158,6 +168,17 @@ async function migrateSchema(db: Client) {
   const userColNames = (await db.execute("PRAGMA table_info(users)")).rows.map(
     (r) => (r as unknown as { name: string }).name
   );
+  if (!userColNames.includes("data_consent")) {
+    // Opt-in to using this person's answers to improve the service (1 = yes),
+    // and when they last changed it. Default: not consented.
+    await db.execute("ALTER TABLE users ADD COLUMN data_consent INTEGER NOT NULL DEFAULT 0");
+    await db.execute("ALTER TABLE users ADD COLUMN data_consent_at TEXT");
+  }
+  if (!userColNames.includes("appearance")) {
+    // Optional short description of how the person looks ("단발머리의 60대
+    // 여성"), used to keep generated illustrations consistent.
+    await db.execute("ALTER TABLE users ADD COLUMN appearance TEXT");
+  }
   if (!userColNames.includes("onboarding_seen")) {
     // Tutorial shown/skipped for this account (per account, not per device).
     await db.execute("ALTER TABLE users ADD COLUMN onboarding_seen INTEGER NOT NULL DEFAULT 0");

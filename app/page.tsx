@@ -57,6 +57,7 @@ export default function Home() {
   const [followUp, setFollowUp] = useState<{ question: string; index: number } | null>(null);
   const [pendingNext, setPendingNext] = useState<NextQuestion | null>(null);
   const [reaction, setReaction] = useState("");
+  const [lastQuestionId, setLastQuestionId] = useState<number | null>(null);
   const [completedStageId, setCompletedStageId] = useState<number | null>(null);
   const [streakDays, setStreakDays] = useState(0);
 
@@ -167,6 +168,7 @@ export default function Home() {
       allowFollowUp: mode !== "redo",
     });
     setLastChapter(data.chapter);
+    setLastQuestionId(activeQuestionId ?? null);
     setLastTranscript(data.transcript ?? text);
     setReaction(data.reaction ?? "");
     setCompletedStageId(data.completedStageId ?? null);
@@ -608,7 +610,12 @@ export default function Home() {
 
           {lastChapter && (
             <div ref={chapterRef} className="w-full max-w-xl scroll-mt-20">
-              <ChapterPanel label={t.justAnsweredLabel} transcript={lastTranscript} chapter={lastChapter} />
+              <ChapterPanel
+                label={t.justAnsweredLabel}
+                transcript={lastTranscript}
+                chapter={lastChapter}
+                questionId={lastQuestionId}
+              />
             </div>
           )}
         </>

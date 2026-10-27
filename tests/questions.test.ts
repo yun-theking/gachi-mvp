@@ -222,3 +222,36 @@ describe("progress rewards", () => {
     expect(await getStreakDays(user, new Date("2026-03-06T05:00:00Z"))).toBe(0);
   });
 });
+
+describe("optional features: consent, appearance, illustrations", () => {
+  it("consent is off until the person opts in, and can be withdrawn", async () => {
+    const { getUserSettings, setDataConsent } = await import("@/lib/questions");
+    const user = await newUser();
+    expect((await getUserSettings(user)).dataConsent).toBe(false);
+    await setDataConsent(user, true);
+    expect((await getUserSettings(user)).dataConsent).toBe(true);
+    await setDataConsent(user, false);
+    expect((await getUserSettings(user)).dataConsent).toBe(false);
+  });
+
+  it("appearance is trimmed, capped and clearable", async () => {
+    const { getUserSettings, setAppearance } = await import("@/lib/questions");
+    const user = await newUser();
+    await setAppearance(user, "  단발머리 여성  ");
+    expect((await getUserSettings(user)).appearance).toBe("단발머리 여성");
+    await setAppearance(user, "가".repeat(300));
+    expect((await getUserSettings(user)).appearance).toHaveLength(100);
+    await setAppearance(user, "");
+    expect((await getUserSettings(user)).appearance).toBe("");
+  });
+
+  it("an illustration is dropped when its answer is rewritten", async () => {
+    const { saveChapterImage, getChapterImage } = await import("@/lib/questions");
+    const user = await newUser();
+    await answer(user, 10101, "처음");
+    await saveChapterImage(user, 10101, "data:image/webp;base64,AAAA");
+    expect(await getChapterImage(user, 10101)).toBe("data:image/webp;base64,AAAA");
+    await answer(user, 10101, "고친 답변");
+    expect(await getChapterImage(user, 10101)).toBeNull();
+  });
+});

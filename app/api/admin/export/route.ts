@@ -6,6 +6,7 @@ import { stageNameEn } from "@/lib/stages";
 
 interface EntryExportRow {
   user_id: string;
+  data_consent?: number;
   question_id?: number | null;
   language: string;
   life_stage_id: number;
@@ -83,6 +84,8 @@ export async function GET(req: NextRequest) {
   }
 
   const userId = req.nextUrl.searchParams.get("userId")?.trim();
+  // ?consented=1: only people who opted in to service-improvement use.
+  const consentedOnly = req.nextUrl.searchParams.get("consented") === "1";
 
   const db = await getDb();
 
@@ -116,11 +119,13 @@ export async function GET(req: NextRequest) {
     // Full download: one tab per user, so a reader can jump straight to one
     // person instead of scrolling through everyone in a single flat sheet.
     const result = await db.execute(
-      `SELECT e.user_id, COALESCE(u.language, 'ko') as language, e.life_stage_id, e.question_id,
+      `SELECT e.user_id, COALESCE(u.language, 'ko') as language, COALESCE(u.data_consent, 0) as data_consent,
+              e.life_stage_id, e.question_id,
               e.question_ko, e.question_ja, e.transcript, e.chapter, e.created_at,
               e.recording_seconds, e.time_on_question_seconds, e.answer_chars
        FROM entries e
        LEFT JOIN users u ON u.id = e.user_id
+       ${consentedOnly ? "WHERE u.data_consent = 1" : ""}
        ORDER BY e.user_id, e.life_stage_id, e.id`
     );
     const rows = result.rows as unknown as EntryExportRow[];
@@ -139,6 +144,7 @@ export async function GET(req: NextRequest) {
       { header: "User ID", key: "user_id", width: 14 },
       { header: "Language", key: "language", width: 10 },
       { header: "Entry Count", key: "count", width: 12 },
+      { header: "Data Consent", key: "consent", width: 14 },
       { header: "Avg Recording (sec)", key: "avg_recording", width: 20 },
       { header: "Avg Time on Question (sec)", key: "avg_time", width: 26 },
       { header: "Avg Answer Length (chars)", key: "avg_chars", width: 24 },
@@ -149,6 +155,7 @@ export async function GET(req: NextRequest) {
         user_id: uid,
         language: languageLabel(entries[0].language),
         count: entries.length,
+        consent: Number(entries[0].data_consent ?? 0) === 1 ? "Yes" : "No",
         avg_recording: average(entries.map((e) => e.recording_seconds)),
         avg_time: average(entries.map((e) => e.time_on_question_seconds)),
         avg_chars: average(entries.map((e) => e.answer_chars)),
@@ -194,7 +201,7 @@ export async function GET(req: NextRequest) {
       addEntryRows(workbook.addWorksheet(sheetNameFor(uid)), entries);
     }
 
-    filename = `gachi-entries-all-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    filename = `gachi-entries-${consentedOnly ? "consented" : "all"}-${new Date().toISOString().slice(0, 10)}.xlsx`;
   }
 
   const buffer = await workbook.xlsx.writeBuffer();

@@ -12,7 +12,9 @@ export type ApiErrorCode =
   | "RATE_LIMITED"
   | "INVALID_INPUT"
   | "TRANSCRIBE_FAILED"
-  | "GENERATE_FAILED";
+  | "GENERATE_FAILED"
+  | "FEATURE_OFF"
+  | "NOT_FOUND";
 
 export function apiError(
   code: ApiErrorCode,
