@@ -82,6 +82,14 @@ async function createSchema(db: Client) {
       window_start TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Natural-voice audio for fixed texts (bank questions), so each one is
+    -- generated once per voice/language instead of on every listen.
+    CREATE TABLE IF NOT EXISTS tts_cache (
+      key TEXT PRIMARY KEY, -- sha256 of model|voice|instructions|lang|text
+      audio TEXT NOT NULL,  -- mp3, base64
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     -- One generated illustration per answer (only if images are enabled).
     -- Removed whenever the answer is rewritten, since it no longer matches.
     CREATE TABLE IF NOT EXISTS chapter_images (

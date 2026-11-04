@@ -255,3 +255,19 @@ describe("optional features: consent, appearance, illustrations", () => {
     expect(await getChapterImage(user, 10101)).toBeNull();
   });
 });
+
+describe("natural voice cache", () => {
+  it("caches only bank question texts, keyed per language and voice", async () => {
+    const { isCacheableText, ttsCacheKey, getCachedAudio, saveCachedAudio } = await import("@/lib/tts");
+    const q = (await getQuestionById(10101))!;
+    expect(await isCacheableText(q.question_ko)).toBe(true);
+    expect(await isCacheableText(q.question_ja)).toBe(true);
+    expect(await isCacheableText("그때 몇 살이셨어요?")).toBe(false);
+
+    expect(ttsCacheKey("ko", "같은 글")).not.toBe(ttsCacheKey("ja", "같은 글"));
+    const key = ttsCacheKey("ko", q.question_ko);
+    expect(await getCachedAudio(key)).toBeNull();
+    await saveCachedAudio(key, Buffer.from([1, 2, 3]));
+    expect([...(await getCachedAudio(key))!]).toEqual([1, 2, 3]);
+  });
+});

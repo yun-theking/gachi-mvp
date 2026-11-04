@@ -12,7 +12,7 @@ import { useQuestionSelection } from "@/components/QuestionSelectionProvider";
 import OnboardingModal from "@/components/OnboardingModal";
 import TranscriptReviewPanel from "@/components/TranscriptReviewPanel";
 import { useRecorder, WARNING_AT_SECONDS } from "@/hooks/useRecorder";
-import { speak, stopSpeaking, readAloudEnabled } from "@/hooks/useSpeech";
+import { speak, stopSpeaking, readAloudEnabled, unlockAudio } from "@/hooks/useSpeech";
 import * as api from "@/lib/interviewApi";
 import { stageShortName } from "@/lib/stages";
 import type { SavedEntry, StagePos } from "@/lib/interviewApi";
@@ -277,6 +277,8 @@ export default function Home() {
 
   const startRecording = async () => {
     stopSpeaking();
+    // A tap: lets automatic read-aloud of the next question play on iPhones.
+    if (readAloudEnabled()) unlockAudio();
     setJustCompleted(false);
     pendingBlobRef.current = null;
     pendingTextRef.current = null;
