@@ -99,7 +99,7 @@ export default function OnboardingModal({ onFinish }: { onFinish: () => void }) 
 
   return createPortal(
     <div className="fixed inset-0 z-[200] flex flex-col bg-bg">
-      <div className="flex justify-end px-4 pt-4">
+      <div className="relative z-10 flex justify-end px-4 pt-4">
         <button
           onClick={finish}
           className="text-base font-semibold text-text-dim underline hover:text-accent-dark transition-colors py-2.5 px-3 min-h-[44px]"
